@@ -6,7 +6,7 @@ version = "0.1.0"
 # Description
 title = "isaac_neuromeka"
 description="Extension for Isaac Sim usage in Neuromeka"
-repository = "https://gitlab.com/neuromeka-group/nrmkq/isaac_neuromeka.git"
+repository = ""
 keywords = []
 category = "robotics"
 readme  = "README.md"

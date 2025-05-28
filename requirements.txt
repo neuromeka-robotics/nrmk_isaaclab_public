@@ -1,6 +1,0 @@
-pandas
-toml
-pynput
-ruamel.yaml
-onnxruntime-gpu
-scipy
