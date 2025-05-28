@@ -1,4 +1,4 @@
-# Neuromeka-Isaac
+# Neuromeka-IsaacLab
 
 This is a project template that builds upon [*IsaacLab*](https://github.com/isaac-sim/IsaacLab). Before proceeding, please refer to the installation guides for IsaacLab.
 
