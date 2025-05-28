@@ -1,7 +1,7 @@
-# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+# Copyright (c) 2025 Neuromeka 
 # All rights reserved.
 #
-# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-License-Identifier: Apache-2.0
 
 """This script sets up the vs-code settings for the Isaac Lab project.
 
