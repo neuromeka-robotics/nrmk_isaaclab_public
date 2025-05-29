@@ -240,11 +240,11 @@ class TerminationsCfg:
 # Environment configuration
 ##
 
-from isaaclab.envs import ManagerBasedEnvCfg
+from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.envs.ui import ManagerBasedRLEnvWindow
 
 @configclass
-class NrmkRLEnvCfg(ManagerBasedEnvCfg):
+class NrmkRLEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for a reinforcement learning environment."""
 
     # ui settings
