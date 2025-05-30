@@ -42,6 +42,8 @@ from isaac_neuromeka.mdp.actions.action_cfgs import ClampedJointActionCfg
 from isaac_neuromeka.assets.articulation import FiniteArticulationCfg
 
 from isaac_neuromeka.assets import MOBY_CFG
+from isaaclab.terrains import TerrainImporterCfg
+
 
 ##
 # Scene definition
@@ -58,6 +60,12 @@ class MobySceneCfg(InteractiveSceneCfg):
         prim_path="/World/ground",
         spawn=sim_utils.GroundPlaneCfg(),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)),
+    )
+
+    mesh = TerrainImporterCfg(
+        prim_path="/World/mesh",
+        terrain_type="usd",
+        usd_path="/home/nrmk/Documents/usd_test/mesh_test.usd",
     )
     
     # robots

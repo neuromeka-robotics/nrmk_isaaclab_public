@@ -1,0 +1,187 @@
+# Copyright (c) 2023-2025, ETH Zurich (Robotics Systems Lab)
+# Author: Pascal Roth
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+
+from __future__ import annotations
+
+import builtins
+
+# python
+import os
+from typing import TYPE_CHECKING
+
+# omni
+import carb
+import omni.isaac.core.utils.prims as prim_utils
+import omni.isaac.core.utils.stage as stage_utils
+
+# isaac-lab
+import isaaclab.sim as sim_utils
+
+from isaaclab.sim.simulation_context import SimulationContext
+from isaaclab.terrains import TerrainImporter
+
+# WARP
+import warp as wp
+from isaaclab.utils.warp import convert_to_warp_mesh
+from isaaclab.utils.warp import raycast_mesh
+
+## 
+import trimesh
+from isaaclab.utils import configclass
+import torch
+
+if TYPE_CHECKING:
+    from isaaclab.terrains  import TerrainGeneratorCfg, TerrainImporterCfg
+
+
+@configclass
+class MeshTerrainImporterCfg(TerrainImporterCfg):
+    obj_dir: str = ""
+    node_density: float = 1.0 # number of nodes per m^2
+
+
+class MeshTerrainImporter(TerrainImporter):
+    """
+    Default stairs environment for testing
+    """
+
+    cfg: MeshTerrainImporterCfg
+
+    mesh: trimesh.Trimesh
+
+    def __init__(self, cfg: MeshTerrainImporterCfg) -> None:
+
+        # check that the config is valid
+        cfg.validate()
+        # store inputs
+        self.cfg = cfg
+        self.device = sim_utils.SimulationContext.instance().device  # type: ignore
+
+        # create buffers for the terrains
+        self.terrain_prim_paths = list()
+        self.terrain_origins = None
+        self.env_origins = None  # assigned later when `configure_env_origins` is called
+        # private variables
+        self._terrain_flat_patches = dict()
+
+        self.load_terrain_mesh(cfg.obj_dir)
+
+
+    
+    def load_terrain_mesh(self, obj_dir: str):
+        paths = [os.path.join(obj_dir, file) for file in os.listdir(obj_dir) if file.endswith(".obj")]
+        meshes = [trimesh.load(path, force="mesh", skip_materials=True) for path in paths]
+        self.mesh = trimesh.util.concatenate(meshes)
+
+
+    def sample_nodes_from_mesh(self, num_nodes: int = 1000):
+        """
+        Sample nodes from the mesh.
+        """
+
+        sample_count = int(self.mesh.area * self.cfg.node_density)
+        face_weight = self.mesh.area_faces
+        samples, face_index = trimesh.sample.sample_surface(self.mesh, sample_count, face_weight)
+
+
+        face_ids = torch.tensor(face_index, device=self.device, dtype=torch.int64)
+        positions = torch.tensor(samples, device=self.device, dtype=torch.float32)
+        normals = torch.tensor(self.mesh.face_normals[face_index, :], device=self.device)
+
+        # check gravity alignment
+        gravity = torch.tensor([0.0, 0.0, -1.0]).to(normals)
+        mask = torch.abs(torch.arccos(torch.matmul(normals, -gravity))) < 0.785 # # 45 degrees 
+
+        face_ids = face_ids[mask]
+        positions = positions[mask, :]
+        normals = normals[mask, :]
+
+        ## Find flat patches
+        wp_mesh = convert_to_warp_mesh(self.mesh.vertices, self.mesh.faces, device="cuda")
+
+
+
+        positions, face_ids, scan_points = filter_flat(
+            wp_mesh=wp_mesh,
+            sampled_points= positions,
+            face_ids=face_ids,
+            patch_radius=[0.5, 0.75],
+        )
+
+
+
+        return points
+    
+
+
+
+    def filter_flat(
+        wp_mesh: wp.Mesh,
+        sampled_points: torch.Tensor,
+        face_ids: torch.Tensor,
+        patch_radius: float | list[float],
+    ) -> torch.Tensor:
+
+        # set device to warp mesh device
+        device = wp.device_to_torch(wp_mesh.device)
+
+        # resolve inputs to consistent type
+        # -- patch radii
+        if isinstance(patch_radius, float):
+            patch_radius = [patch_radius]
+
+
+        # create a circle of points around (0, 0) to query validity of the patches
+        # the ring of points is uniformly distributed around the circle
+        angle = torch.linspace(0, 2 * np.pi, 10, device=device)
+        query_x = []
+        query_y = []
+        for radius in patch_radius:
+            query_x.append(radius * torch.cos(angle))
+            query_y.append(radius * torch.sin(angle))
+        query_x = torch.cat(query_x).unsqueeze(1)  # dim: (num_radii * 10, 1)
+        query_y = torch.cat(query_y).unsqueeze(1)  # dim: (num_radii * 10, 1)
+
+        # dim: (num_radii * 10, 3)
+        query_points = torch.cat([query_x, query_y, torch.zeros_like(query_x)], dim=-1)
+
+        num_points = sampled_points.shape[0]
+        # create buffers
+        # -- a buffer to store indices of points that are not valid
+        points_ids = torch.arange(num_points, device=device)
+        
+
+        # dim: (num_points, num_radii * 10, 3)
+        scan_points = sampled_points.unsqueeze(1) + query_points
+        scan_points[..., 2] += 1.0 # Raycast from 1.0 above the patch to find the height
+
+        # ray-cast direction is downwards
+        scan_dirs = torch.zeros_like(scan_points)
+        scan_dirs[..., 2] = -1.0
+
+
+        ray_hits = raycast_mesh(scan_points.view(-1, 3), scan_dirs.view(-1, 3), wp_mesh)[0]
+
+        # resphape_back
+        ray_hits_per_point = ray_hits.reshape(scan_points.shape[0], -1, 3)  # dim: (num_points, num_radii * 10, 3)
+        heights = ray_hits_per_point[..., 2]  # dim: (num_points, num_radii * 10)
+
+        heights_from_sampled_points = sampled_points[:, 2].unsqueeze(1) - heights  # dim: (num_points, num_radii * 10)
+
+        print(heights_from_sampled_points)
+        valid = torch.all(
+            torch.logical_and(
+                heights_from_sampled_points >= -0.1,
+                heights_from_sampled_points <= 0.1
+            ),
+            dim=1
+        )  # dim: (num_points,)
+        
+        points_valid = sampled_points[valid, :]  # dim: (num_valid_points, 3)
+        face_ids = face_ids[valid]  # dim: (num_valid_points,)
+
+        return points_valid, face_ids, scan_points
