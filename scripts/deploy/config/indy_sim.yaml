@@ -1,0 +1,7 @@
+isaaclab_task: "Indy-Stream"
+
+communication:
+  sim_ip: "localhost"
+  ports: 
+    state: 8080
+    control: 8081

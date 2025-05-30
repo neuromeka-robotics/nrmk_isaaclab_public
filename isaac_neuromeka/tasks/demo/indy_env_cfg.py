@@ -78,6 +78,10 @@ class ObservationsCfg:
         pdot = ObsTerm(func=mdp.body_vel_b, params={"body_name": "tcp"})
         op_state = ObsTerm(func=mdp.op_state)
     
+        def __post_init__(self):
+            self.enable_corruption = True
+            self.concatenate_terms = False
+
     # @configclass
     # class VisionStatesCfg(RobotStatesCfg):
     #     # ik_solution = ObsTerm(func=mdp.ik_solution, params={"command_name": "ee_pose"}) # TODO: fix
@@ -156,10 +160,7 @@ class IndyStreamEnvCfg(NrmkRLEnvCfg):
     costs = EmptyCfg() # Not used for now
     terminations = EmptyCfg() # Not used for now
     
-    actor_obs_list: list = ["policy"] # ["proprioception", "point_cloud", "privileged"]
-    critic_obs_list: list | None = None # None: same as actor_obs_list
-    teacher_obs_list: list | None = None # None: same as actor_obs_list
-
+    actor_obs_list = ["policy"]
 
     def __post_init__(self):
         # post init of parent
