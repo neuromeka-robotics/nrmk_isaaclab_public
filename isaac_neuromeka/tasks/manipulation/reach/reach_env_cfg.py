@@ -23,7 +23,7 @@ from isaaclab.sensors import ContactSensor, ContactSensorCfg, FrameTransformer, 
 
 # Import common environment configuration
 from isaac_neuromeka.tasks.manipulation.common.env_cfg_common import *
-
+from isaac_neuromeka.env.rl_task_env_cfg import NrmkRLEnvCfg
 ##
 # Scene definition
 ##

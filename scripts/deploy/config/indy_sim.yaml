@@ -1,4 +1,4 @@
-isaaclab_task: "Indy-Stream"
+isaaclab_task: "Indy-Deploy"
 urdf_path: "isaac_neuromeka/assets/model/urdf/indy7_simplified.urdf"
 
 communication:

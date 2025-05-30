@@ -5,7 +5,6 @@ from dataclasses import MISSING
 
 import numpy as np
 import isaaclab.sim as sim_utils
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import ActionTermCfg as ActionTerm
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
@@ -235,42 +234,4 @@ class TerminationsCfg:
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
 
-
-##
-# Environment configuration
-##
-
-from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.envs.ui import ManagerBasedRLEnvWindow
-
-@configclass
-class NrmkRLEnvCfg(ManagerBasedRLEnvCfg):
-    """Configuration for a reinforcement learning environment."""
-
-    # ui settings
-    ui_window_class_type: type | None = ManagerBasedRLEnvWindow
-
-    # general settings
-    is_finite_horizon: bool = False
-    episode_length_s: float = MISSING
-
-    # environment settings
-    rewards: object = MISSING
-    terminations: object = MISSING
-    curriculum: object = MISSING
-    commands: object = MISSING
-    
-    # New for NRMK-RL
-    actor_obs_list: list = ["policy"]
-    critic_obs_list: list | None = None
-    teacher_obs_list: list | None = None
-    
-    def __post_init__(self):
-        """Post initialization."""
-        # task settings
-        self.decimation = 24
-        self.sim.render_interval = 8
-        self.sim.dt = 1.0 / 120.0
-
-    
 

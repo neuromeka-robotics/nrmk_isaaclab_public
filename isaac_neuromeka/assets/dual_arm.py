@@ -3,14 +3,13 @@ import os
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaaclab.assets.articulation import ArticulationCfg
-from isaac_neuromeka.assets.articulation import FiniteArticulation
+from isaac_neuromeka.assets.articulation import FiniteArticulation, FiniteArticulationCfg
 
 ##
 # Configuration
 ##
 
-DUAL_ARM_CFG = ArticulationCfg(
+DUAL_ARM_CFG = FiniteArticulationCfg(
     class_type=FiniteArticulation,
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/dual_icon3/dual_icon3_edited.usd",
@@ -26,7 +25,7 @@ DUAL_ARM_CFG = ArticulationCfg(
             solver_velocity_iteration_count=0
         ),
     ),
-    init_state=ArticulationCfg.InitialStateCfg(
+    init_state=FiniteArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.0),
         joint_pos={".*": 0.0},
     ),

@@ -25,10 +25,11 @@ from isaac_neuromeka.tasks.manipulation.reach.reach_env_cfg import TeacherObsCfg
 from isaac_neuromeka.tasks.manipulation.reach.reach_env_cfg import CostsCfg
 from isaac_neuromeka.mdp.actions import CustomJointPositionAction
 from isaac_neuromeka.env.rl_task_custom_env import HistoryManager
+from isaac_neuromeka.assets.articulation import  FiniteArticulationCfg
 
 import isaaclab.sim as sim_utils
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import  AssetBaseCfg
 from isaaclab.sensors import ContactSensor, ContactSensorCfg, FrameTransformer, FrameTransformerCfg
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
@@ -54,7 +55,7 @@ class ReachSceneCfg(InteractiveSceneCfg):
     )
 
     # robots
-    robot: ArticulationCfg = None
+    robot: FiniteArticulationCfg = None
     
     # target object
     obstacle = None

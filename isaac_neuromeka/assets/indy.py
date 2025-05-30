@@ -3,14 +3,13 @@ import os
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaaclab.assets.articulation import ArticulationCfg
-from isaac_neuromeka.assets.articulation import FiniteArticulation
+from isaac_neuromeka.assets.articulation import FiniteArticulation, FiniteArticulationCfg
 
 ##
 # Configuration
 ##
 
-INDY7_CFG = ArticulationCfg(
+INDY7_CFG = FiniteArticulationCfg(
     class_type=FiniteArticulation,
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/indy7/indy7.usd",
@@ -24,7 +23,7 @@ INDY7_CFG = ArticulationCfg(
             enabled_self_collisions=True, solver_position_iteration_count=8, solver_velocity_iteration_count=0
         ),
     ),
-    init_state=ArticulationCfg.InitialStateCfg(
+    init_state=FiniteArticulationCfg.InitialStateCfg(
         joint_pos={
             "joint0": 0.0,
             "joint1": 0.0,
@@ -60,7 +59,7 @@ INDY7_CFG = ArticulationCfg(
     soft_joint_pos_limit_factor=1.0,
 )
 
-INDY7_ORBIT_ALLEGRO_CFG = ArticulationCfg(
+INDY7_ORBIT_ALLEGRO_CFG = FiniteArticulationCfg(
     class_type=FiniteArticulation,
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/indy7_orbit_allegro_hand/indy7_orbit_allegro_hand.usd",
@@ -84,7 +83,7 @@ INDY7_ORBIT_ALLEGRO_CFG = ArticulationCfg(
             stabilization_threshold=0.0005,
         ),
     ),
-    init_state=ArticulationCfg.InitialStateCfg(
+    init_state=FiniteArticulationCfg.InitialStateCfg(
         joint_pos={
             # indy7
             "joint0": 0.0,

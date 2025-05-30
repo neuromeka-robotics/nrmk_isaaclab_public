@@ -22,8 +22,6 @@ class FiniteArticulation(Articulation):
         self.joint_pos_history = None
         self.joint_vel_history = None
         
-        print(self.cfg)
-        
         self.history_len = self.cfg.history_len
         
     def reset(self, env_ids: Sequence[int] | slice | None = None):

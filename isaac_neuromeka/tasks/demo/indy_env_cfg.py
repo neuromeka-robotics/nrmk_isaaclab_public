@@ -6,13 +6,14 @@ import numpy as np
 
 from isaaclab.utils import configclass
 from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaac_neuromeka.tasks.manipulation.common.env_cfg_common import NrmkRLEnvCfg # TODO: move one level up
+from isaac_neuromeka.env.rl_task_env_cfg import NrmkRLEnvCfg # TODO: move one level up
 from isaac_neuromeka.assets import INDY7_CFG
+from isaac_neuromeka.assets.articulation import FiniteArticulationCfg
 
 import isaac_neuromeka.mdp as mdp
 from isaac_neuromeka.utils.etc import EmptyCfg
 
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import  AssetBaseCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensor, ContactSensorCfg, FrameTransformer, FrameTransformerCfg
 
@@ -47,7 +48,7 @@ class IndyDemoSceneCfg(InteractiveSceneCfg):
 
 
     # robots
-    robot: ArticulationCfg = INDY7_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot: FiniteArticulationCfg = INDY7_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
     
     # target object
     obstacle = None
@@ -94,6 +95,18 @@ class ObservationsCfg:
     
     # observation groups
     policy = RobotStatesCfg()
+
+
+
+## THIS IS ONLY USED FOR SANITY CHECKS AND TESTING
+@configclass
+class ObservationRSLRL(ObservationsCfg):
+    @configclass
+    class RobotStatesFlatCfg(ObservationsCfg.RobotStatesCfg):
+        def __post_init__(self):
+            self.enable_corruption = True
+            self.concatenate_terms = True
+    policy = RobotStatesFlatCfg()
 
 
 # @configclass
@@ -148,7 +161,7 @@ class EventCfg:
     )
 
 @configclass
-class IndyStreamEnvCfg(NrmkRLEnvCfg):
+class IndyDeployEnvCfg(NrmkRLEnvCfg):
     
     scene = IndyDemoSceneCfg(num_envs=1, env_spacing=3.0)
     observations = ObservationsCfg()
@@ -167,14 +180,18 @@ class IndyStreamEnvCfg(NrmkRLEnvCfg):
         super().__post_init__()
         
         # override
-
-        self.decimation = 24
+        self.decimation = 5 # 20 Hz
         self.sim.render_interval = 8
-        self.sim.dt = 1.0 / 120.0
-
+        self.sim.dt = 1.0 / 100.0
 
         self.episode_length_s = 6000.
 
+## THIS IS ONLY USED FOR SANITY CHECKS AND TESTING
+@configclass
+class IndyDeployEnvRSLRL(IndyDeployEnvCfg):
+    """Configuration for the Indy deployment environment with RSLRL observations."""
+    
+    observations = ObservationRSLRL()
 
 # @configclass
 # class VisionDemoEnvCfg(IndyVisionCMDPEnvCfg):
