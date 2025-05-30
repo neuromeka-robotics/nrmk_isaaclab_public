@@ -1,4 +1,5 @@
 isaaclab_task: "Indy-Stream"
+urdf_path: "isaac_neuromeka/assets/model/urdf/indy7_simplified.urdf"
 
 communication:
   sim_ip: "localhost"

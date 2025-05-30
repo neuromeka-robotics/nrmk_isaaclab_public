@@ -118,8 +118,10 @@ class ZmqSubscriber:
     def __init__(self,
                  ip: str, port=5557,
                  log_level=logging.DEBUG, 
-                 compression: str = None):
+                 compression: str = None,
+                 verbose: bool = False):
         
+        self.verbose = verbose
         self.address = f"tcp://{ip}:{port}"
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
@@ -168,7 +170,7 @@ class ZmqSubscriber:
                         logging.exception(f"[ZmqSubscriber] Error in recv: {e}")
                 else:
                     timeout_count += 1
-                    if timeout_count % 50 == 0:
+                    if self.verbose and timeout_count % 50 == 0:
                         logging.warning(f"[ZmqSubscriber] No data for {timeout_count * poll_timeout_ms} ms on {self.address}")
 
         self.thread = threading.Thread(target=async_listen, daemon=True)
