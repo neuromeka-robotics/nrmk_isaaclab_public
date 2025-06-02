@@ -99,6 +99,24 @@ class CustomManagerBasedRLEnv(ManagerBasedRLEnv):
         # note: done after reset to get the correct observations for reset envs
         self.obs_buf = self.observation_manager.compute()
 
+
+        images = self.scene.sensors["camera"].data.output["rgb"]
+        images = images.float() / 255.0
+
+        # visualize the first image in the batch using matplotlib (for debugging)
+        import matplotlib.pyplot as plt
+
+
+        img = images[0].cpu().numpy()
+        plt.imshow(img)
+        plt.title("Camera RGB Image")
+        plt.axis("off")
+        plt.draw()
+        plt.pause(0.001)
+        plt.clf()
+        
+
+
         # return observations, rewards, resets and extras
         return self.obs_buf, self.reward_buf, self.reset_terminated, self.reset_time_outs, self.extras
 

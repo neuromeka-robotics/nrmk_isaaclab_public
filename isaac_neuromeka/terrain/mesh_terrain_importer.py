@@ -13,16 +13,14 @@ import builtins
 import os
 from typing import TYPE_CHECKING
 
-# omni
-import carb
-import omni.isaac.core.utils.prims as prim_utils
-import omni.isaac.core.utils.stage as stage_utils
+
 
 # isaac-lab
 import isaaclab.sim as sim_utils
 
 from isaaclab.sim.simulation_context import SimulationContext
 from isaaclab.terrains import TerrainImporter
+from isaaclab.terrains.terrain_importer_cfg import TerrainImporterCfg
 
 # WARP
 import warp as wp
@@ -33,15 +31,19 @@ from isaaclab.utils.warp import raycast_mesh
 import trimesh
 from isaaclab.utils import configclass
 import torch
+import numpy as np
+import isaaclab.sim as sim_utils
+from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
-if TYPE_CHECKING:
-    from isaaclab.terrains  import TerrainGeneratorCfg, TerrainImporterCfg
-
+from isaaclab.sim.converters import MeshConverter, MeshConverterCfg
+from isaaclab.sim.schemas import schemas_cfg
 
 @configclass
 class MeshTerrainImporterCfg(TerrainImporterCfg):
     obj_dir: str = ""
     node_density: float = 1.0 # number of nodes per m^2
+    terrain_type= "usd"
 
 
 class MeshTerrainImporter(TerrainImporter):
@@ -68,17 +70,102 @@ class MeshTerrainImporter(TerrainImporter):
         # private variables
         self._terrain_flat_patches = dict()
 
+        collision_approximation = "none" 
+        collision_props = schemas_cfg.CollisionPropertiesCfg(collision_enabled=True)
+
+
+        usd_path = "/home/nrmk/Documents/usd_test/terrain.usd"
+            # Create Mesh converter config
+        mesh_converter_cfg = MeshConverterCfg(
+            mass_props=None,
+            rigid_props=None,
+            collision_props=collision_props,
+            asset_path="/home/nrmk/Documents/ETH_LEE_H_with_terrace_cropped/box_000_000_000_00000.obj",
+            force_usd_conversion=True,
+            usd_dir=os.path.dirname(usd_path),
+            usd_file_name=os.path.basename(usd_path),
+            make_instanceable=True,
+            collision_approximation=collision_approximation,
+        )
+        
+        self.mesh_converter = MeshConverter(cfg=mesh_converter_cfg)
+
+
+
         self.load_terrain_mesh(cfg.obj_dir)
 
+        self.import_usd("terrain", usd_path)
+        # self.import_mesh(name="terrain", mesh = self.mesh)
 
+        # assign randomly
+        num_envs = self.cfg.num_envs
+        idx = torch.randint(
+            low=0, high=self.terrain_origins.shape[0], size=(num_envs,), device=self.device
+        )
+        self.env_origins = self.terrain_origins[idx]
+
+        self.set_debug_vis(True)
+
+
+
+    def set_debug_vis(self, debug_vis: bool) -> bool:
+        """Set the debug visualization of the terrain importer.
+
+        Args:
+            debug_vis: Whether to visualize the terrain origins.
+
+        Returns:
+            Whether the debug visualization was successfully set. False if the terrain
+            importer does not support debug visualization.
+
+        Raises:
+            RuntimeError: If terrain origins are not configured.
+        """
+        # create a marker if necessary
+
+        FRAME_MARKER_CFG = VisualizationMarkersCfg(
+            markers={
+                "frame": sim_utils.UsdFileCfg(
+                    usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/frame_prim.usd",
+                    scale=(0.2, 0.2, 0.2),
+                )
+            }
+        )
+        
+        if debug_vis:
+            if not hasattr(self, "origin_visualizer"):
+                self.origin_visualizer = VisualizationMarkers(
+                    cfg=FRAME_MARKER_CFG.replace(prim_path="/Visuals/TerrainOrigin")
+                )
+                if self.terrain_origins is not None:
+                    self.origin_visualizer.visualize(self.terrain_origins.reshape(-1, 3))
+                elif self.env_origins is not None:
+                    self.origin_visualizer.visualize(self.env_origins.reshape(-1, 3))
+                else:
+                    raise RuntimeError("Terrain origins are not configured.")
+            # set visibility
+            self.origin_visualizer.set_visibility(True)
+        else:
+            if hasattr(self, "origin_visualizer"):
+                self.origin_visualizer.set_visibility(False)
+        # report success
+        return True
     
     def load_terrain_mesh(self, obj_dir: str):
-        paths = [os.path.join(obj_dir, file) for file in os.listdir(obj_dir) if file.endswith(".obj")]
-        meshes = [trimesh.load(path, force="mesh", skip_materials=True) for path in paths]
-        self.mesh = trimesh.util.concatenate(meshes)
+        # paths = [os.path.join(obj_dir, file) for file in os.listdir(obj_dir) if file.endswith(".obj")]
+        # meshes = [trimesh.load(path, force="mesh", skip_materials=True) for path in paths]
+        # self.mesh = trimesh.util.concatenate(meshes)
+
+        self.mesh = trimesh.load("/home/nrmk/Documents/ETH_LEE_H_with_terrace_cropped/box_000_000_000_00000.obj", force="mesh")
+
+        self.mesh.visual.vertex_colors = None
+
+        self.terrain_origins = self.sample_nodes_from_mesh()
+
+        
 
 
-    def sample_nodes_from_mesh(self, num_nodes: int = 1000):
+    def sample_nodes_from_mesh(self):
         """
         Sample nodes from the mesh.
         """
@@ -101,25 +188,23 @@ class MeshTerrainImporter(TerrainImporter):
         normals = normals[mask, :]
 
         ## Find flat patches
-        wp_mesh = convert_to_warp_mesh(self.mesh.vertices, self.mesh.faces, device="cuda")
+        mesh_to_wp = convert_to_warp_mesh(self.mesh.vertices, self.mesh.faces, device="cuda")
 
 
-
-        positions, face_ids, scan_points = filter_flat(
-            wp_mesh=wp_mesh,
-            sampled_points= positions,
-            face_ids=face_ids,
-            patch_radius=[0.5, 0.75],
+        positions, face_ids = self.filter_flat(
+            mesh_to_wp,
+            positions,
+            face_ids,
+            [0.5, 0.75],
         )
 
 
-
-        return points
+        return positions
     
 
 
 
-    def filter_flat(
+    def filter_flat(self,
         wp_mesh: wp.Mesh,
         sampled_points: torch.Tensor,
         face_ids: torch.Tensor,
@@ -184,4 +269,4 @@ class MeshTerrainImporter(TerrainImporter):
         points_valid = sampled_points[valid, :]  # dim: (num_valid_points, 3)
         face_ids = face_ids[valid]  # dim: (num_valid_points,)
 
-        return points_valid, face_ids, scan_points
+        return points_valid, face_ids

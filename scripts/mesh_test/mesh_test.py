@@ -136,20 +136,21 @@ for i in range(positions.shape[0]):
 	sphere.visual.face_colors = [255, 0, 0, 100]  # Red color with some transparency
 	position_spheres.append(sphere)
 	
-# visualize positions in trimesh
-position_spheres2= []
-debug_points = scan_points.reshape(-1, 3)  # dim: (num_points * num_radii * 10, 3)
-for i in range(debug_points.shape[0]):
-    sphere = trimesh.creation.icosphere(radius=0.1)
-    pos = debug_points[i, :].cpu().numpy()
-    sphere.apply_translation(pos)
-    sphere.visual.face_colors = [0, 0, 255, 255]  # Red color with some transparency
-    position_spheres2.append(sphere)
+# # visualize positions in trimesh
+# position_spheres2= []
+# debug_points = scan_points.reshape(-1, 3)  # dim: (num_points * num_radii * 10, 3)
+# for i in range(debug_points.shape[0]):
+#     sphere = trimesh.creation.icosphere(radius=0.1)
+#     pos = debug_points[i, :].cpu().numpy()
+#     sphere.apply_translation(pos)
+#     sphere.visual.face_colors = [0, 0, 255, 255]  # Red color with some transparency
+#     position_spheres2.append(sphere)
 	
 
 
 
-scene = trimesh.Scene([mesh, origin_sphere] + position_spheres + position_spheres2)
+# scene = trimesh.Scene([mesh, origin_sphere] + position_spheres + position_spheres2)
+scene = trimesh.Scene([mesh, origin_sphere] + position_spheres)
 scene.show()
 
 

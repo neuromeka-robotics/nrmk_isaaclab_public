@@ -44,6 +44,8 @@ from isaac_neuromeka.assets.articulation import FiniteArticulationCfg
 from isaac_neuromeka.assets import MOBY_CFG
 from isaaclab.terrains import TerrainImporterCfg
 
+from isaac_neuromeka.terrain.mesh_terrain_importer import MeshTerrainImporterCfg, MeshTerrainImporter 
+
 
 ##
 # Scene definition
@@ -52,6 +54,12 @@ from isaaclab.managers import CommandTerm
 import torch
 import math
 
+# Test camera
+from isaaclab.sensors import TiledCamera, TiledCameraCfg, save_images_to_file
+import isaaclab.sim as sim_utils
+
+
+
 @configclass
 class MobySceneCfg(InteractiveSceneCfg):
 
@@ -59,15 +67,23 @@ class MobySceneCfg(InteractiveSceneCfg):
     ground = AssetBaseCfg(
         prim_path="/World/ground",
         spawn=sim_utils.GroundPlaneCfg(),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -1.0)),
     )
 
-    mesh = TerrainImporterCfg(
+    # mesh = TerrainImporterCfg(
+    #     prim_path="/World/mesh",
+    #     terrain_type="usd",
+    #     usd_path="/home/nrmk/Documents/usd_test/mesh_test.usd",
+    # )
+    
+    terrain = MeshTerrainImporterCfg(
+        class_type = MeshTerrainImporter,
         prim_path="/World/mesh",
         terrain_type="usd",
-        usd_path="/home/nrmk/Documents/usd_test/mesh_test.usd",
+        obj_dir = "/home/nrmk/Documents/ETH_LEE_H_with_terrace_cropped/"
     )
     
+
     # robots
     robot: FiniteArticulationCfg = MOBY_CFG.replace(prim_path="{ENV_REGEX_NS}/robot")
 
@@ -83,6 +99,19 @@ class MobySceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=2500.0),
     )
 
+
+    
+    camera = TiledCameraCfg(
+        prim_path="/World/envs/env_.*/robot/base_footprint/camera",
+        offset=TiledCameraCfg.OffsetCfg(pos=(0.5, 0.0, 0.1), rot=(1.0, 0.0, 0.0, 0.0), convention="world"),
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955, clipping_range=(0.1, 20.0)
+        ),
+        width=640,
+        height=480,
+    )
+    
 ##
 # Environment configuration
 ##
@@ -130,7 +159,38 @@ class ActionsCfg:
                                                           scale=1.0, use_default_offset=False)              
 
 
+@configclass
+class EventCfg:
+    """Configuration for events."""
+    # reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+
+    reset_robot_pose = EventTerm(
+        func=mdp.reset_pose_terrain,
+        mode="reset",
+        params={
+            "pose_range":  {"yaw": (0.0, 3.14)},
+            "velocity_range":  {"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+        },
+    )
+
+    # TODO: fix them
+    randomize_joint_friction = EventTerm(
+        func=mdp.randomize_joint_parameters,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names="joint.*"),
+            "friction_distribution_params": (0.7, 1.3),
+            "armature_distribution_params": (0.75, 1.25),
+            "operation": "abs",
+            "distribution": "uniform"
+        }
+    )
     
+@configclass
+class TerminationsCfg:
+    """Termination terms for the MDP."""
+
+    time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
 
 @configclass
@@ -145,7 +205,8 @@ class MobyDeployEnvCfg(NrmkRLEnvCfg):
     rewards = EmptyCfg()
     curriculum = EmptyCfg() # Not used for now
     costs = EmptyCfg() # Not used for now
-    terminations = EmptyCfg() # Not used for now
+    terminations = TerminationsCfg() # Not used for now
+    events = EventCfg()
     
     actor_obs_list = ["policy"]
 
@@ -156,7 +217,7 @@ class MobyDeployEnvCfg(NrmkRLEnvCfg):
         # task settings
         self.sim.dt = 1.0 / 120.0
         self.decimation = 24  # 24 * 1/120 = 0.2s
-        self.episode_length_s = 6000.
+        self.episode_length_s = 100.
 
         # viewer settings
         self.viewer.eye = (2.5, 2.5, 2.5)
