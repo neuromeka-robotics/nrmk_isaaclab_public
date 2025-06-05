@@ -44,7 +44,7 @@ from isaac_neuromeka.assets.articulation import FiniteArticulationCfg
 from isaac_neuromeka.assets import MOBY_CFG
 from isaaclab.terrains import TerrainImporterCfg
 
-from isaac_neuromeka.terrain.mesh_terrain_importer import MeshTerrainImporterCfg, MeshTerrainImporter 
+from isaac_neuromeka.terrain.mesh_terrain_cfg import MeshTerrainImporterCfg 
 
 
 ##
@@ -77,10 +77,8 @@ class MobySceneCfg(InteractiveSceneCfg):
     # )
     
     terrain = MeshTerrainImporterCfg(
-        class_type = MeshTerrainImporter,
         prim_path="/World/mesh",
-        terrain_type="usd",
-        obj_dir = "/home/nrmk/Documents/ETH_LEE_H_with_terrace_cropped/"
+        obj_dir = "isaac_neuromeka/assets/terrain_meshes/demo0"
     )
     
 
@@ -104,7 +102,7 @@ class MobySceneCfg(InteractiveSceneCfg):
     camera = TiledCameraCfg(
         prim_path="/World/envs/env_.*/robot/base_footprint/camera",
         offset=TiledCameraCfg.OffsetCfg(pos=(0.5, 0.0, 0.1), rot=(1.0, 0.0, 0.0, 0.0), convention="world"),
-        data_types=["rgb"],
+        data_types = ["rgb", "depth"],
         spawn=sim_utils.PinholeCameraCfg(
             focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955, clipping_range=(0.1, 20.0)
         ),
@@ -165,7 +163,7 @@ class EventCfg:
     # reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
     reset_robot_pose = EventTerm(
-        func=mdp.reset_pose_terrain,
+        func=mdp.reset_pose_mesh_terrain,
         mode="reset",
         params={
             "pose_range":  {"yaw": (0.0, 3.14)},

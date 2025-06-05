@@ -39,12 +39,6 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.sim.converters import MeshConverter, MeshConverterCfg
 from isaaclab.sim.schemas import schemas_cfg
 
-@configclass
-class MeshTerrainImporterCfg(TerrainImporterCfg):
-    obj_dir: str = ""
-    node_density: float = 1.0 # number of nodes per m^2
-    terrain_type= "usd"
-
 
 class MeshTerrainImporter(TerrainImporter):
     """
@@ -65,48 +59,57 @@ class MeshTerrainImporter(TerrainImporter):
 
         # create buffers for the terrains
         self.terrain_prim_paths = list()
-        self.terrain_origins = None
+        self.flat_positions = None
         self.env_origins = None  # assigned later when `configure_env_origins` is called
-        # private variables
-        self._terrain_flat_patches = dict()
-
-        collision_approximation = "none" 
-        collision_props = schemas_cfg.CollisionPropertiesCfg(collision_enabled=True)
 
 
-        usd_path = "/home/nrmk/Documents/usd_test/terrain.usd"
-            # Create Mesh converter config
-        mesh_converter_cfg = MeshConverterCfg(
-            mass_props=None,
-            rigid_props=None,
-            collision_props=collision_props,
-            asset_path="/home/nrmk/Documents/ETH_LEE_H_with_terrace_cropped/box_000_000_000_00000.obj",
-            force_usd_conversion=True,
-            usd_dir=os.path.dirname(usd_path),
-            usd_file_name=os.path.basename(usd_path),
-            make_instanceable=True,
-            collision_approximation=collision_approximation,
-        )
-        
-        self.mesh_converter = MeshConverter(cfg=mesh_converter_cfg)
+        ## LOAD OBJ
+        obj_dir_abs = os.path.abspath(cfg.obj_dir)
 
+        # find obj file from the directory
+        paths = [os.path.join(obj_dir_abs, file) for file in os.listdir(obj_dir_abs) if file.endswith(".obj")]
+        # meshes = [trimesh.load(path, force="mesh", skip_materials=True) for path in paths]
+        # self.mesh = trimesh.util.concatenate(meshes)
+        # load the first mesh
+        self.obj_path = paths[0]
 
+        ## Load mesh as USD in isaacsim
+        usd_path = os.path.join(obj_dir_abs, "terrain.usd")
+        if not os.path.exists(usd_path):
+            collision_approximation = "none" 
+            collision_props = schemas_cfg.CollisionPropertiesCfg(collision_enabled=True)
 
-        self.load_terrain_mesh(cfg.obj_dir)
+            mesh_converter_cfg = MeshConverterCfg(
+                mass_props=None,
+                rigid_props=None,
+                collision_props=collision_props,
+                asset_path=self.obj_path,
+                force_usd_conversion=True,
+                usd_dir=os.path.dirname(usd_path),
+                usd_file_name=os.path.basename(usd_path),
+                make_instanceable=True,
+                collision_approximation=collision_approximation,
+            )            
+            self.mesh_converter = MeshConverter(cfg=mesh_converter_cfg)
 
         self.import_usd("terrain", usd_path)
-        # self.import_mesh(name="terrain", mesh = self.mesh)
 
+        ## Compute origins
+        self.load_terrain_mesh_and_compute_origins(self.obj_path)
+        
         # assign randomly
         num_envs = self.cfg.num_envs
         idx = torch.randint(
-            low=0, high=self.terrain_origins.shape[0], size=(num_envs,), device=self.device
+            low=0, high=self.flat_positions.shape[0], size=(num_envs,), device=self.device
         )
-        self.env_origins = self.terrain_origins[idx]
+        self.env_origins = self.flat_positions[idx]
 
-        self.set_debug_vis(True)
+        self.set_debug_vis(self.cfg.debug_vis)
 
 
+    @property
+    def flat_patches(self) -> dict[str, torch.Tensor]:
+        return self.flat_positions
 
     def set_debug_vis(self, debug_vis: bool) -> bool:
         """Set the debug visualization of the terrain importer.
@@ -137,8 +140,8 @@ class MeshTerrainImporter(TerrainImporter):
                 self.origin_visualizer = VisualizationMarkers(
                     cfg=FRAME_MARKER_CFG.replace(prim_path="/Visuals/TerrainOrigin")
                 )
-                if self.terrain_origins is not None:
-                    self.origin_visualizer.visualize(self.terrain_origins.reshape(-1, 3))
+                if self.flat_positions is not None:
+                    self.origin_visualizer.visualize(self.flat_positions.reshape(-1, 3))
                 elif self.env_origins is not None:
                     self.origin_visualizer.visualize(self.env_origins.reshape(-1, 3))
                 else:
@@ -151,18 +154,10 @@ class MeshTerrainImporter(TerrainImporter):
         # report success
         return True
     
-    def load_terrain_mesh(self, obj_dir: str):
-        # paths = [os.path.join(obj_dir, file) for file in os.listdir(obj_dir) if file.endswith(".obj")]
-        # meshes = [trimesh.load(path, force="mesh", skip_materials=True) for path in paths]
-        # self.mesh = trimesh.util.concatenate(meshes)
 
-        self.mesh = trimesh.load("/home/nrmk/Documents/ETH_LEE_H_with_terrace_cropped/box_000_000_000_00000.obj", force="mesh")
-
-        self.mesh.visual.vertex_colors = None
-
-        self.terrain_origins = self.sample_nodes_from_mesh()
-
-        
+    def load_terrain_mesh_and_compute_origins(self, obj_path: str):
+        self.mesh = trimesh.load(obj_path, force="mesh", skip_materials=True)
+        self.flat_positions = self.sample_nodes_from_mesh()
 
 
     def sample_nodes_from_mesh(self):
@@ -181,7 +176,7 @@ class MeshTerrainImporter(TerrainImporter):
 
         # check gravity alignment
         gravity = torch.tensor([0.0, 0.0, -1.0]).to(normals)
-        mask = torch.abs(torch.arccos(torch.matmul(normals, -gravity))) < 0.785 # # 45 degrees 
+        mask = torch.abs(torch.arccos(torch.matmul(normals, -gravity))) < self.cfg.gravity_alignment_threshold 
 
         face_ids = face_ids[mask]
         positions = positions[mask, :]
@@ -195,13 +190,9 @@ class MeshTerrainImporter(TerrainImporter):
             mesh_to_wp,
             positions,
             face_ids,
-            [0.5, 0.75],
+            patch_radius=self.cfg.flat_patch_radius,
         )
-
-
         return positions
-    
-
 
 
     def filter_flat(self,
@@ -260,8 +251,8 @@ class MeshTerrainImporter(TerrainImporter):
         print(heights_from_sampled_points)
         valid = torch.all(
             torch.logical_and(
-                heights_from_sampled_points >= -0.1,
-                heights_from_sampled_points <= 0.1
+                heights_from_sampled_points >= self.cfg.flat_height_range[0],
+                heights_from_sampled_points <= self.cfg.flat_height_range[1],
             ),
             dim=1
         )  # dim: (num_points,)

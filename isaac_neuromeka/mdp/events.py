@@ -53,53 +53,26 @@ def randomize_delay(
 
 
 
-def reset_pose_terrain(
+def reset_pose_mesh_terrain(
     env: ManagerBasedRLEnv,
     env_ids: torch.Tensor,
     pose_range: dict[str, tuple[float, float]],
     velocity_range: dict[str, tuple[float, float]],
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ):
-    """Reset the asset root state by sampling a random valid pose from the terrain.
 
-    This function samples a random valid pose(based on flat patches) from the terrain and sets the root state
-    of the asset to this position. The function also samples random velocities from the given ranges and sets them
-    into the physics simulation.
-
-    The function takes a dictionary of position and velocity ranges for each axis and rotation:
-
-    * :attr:`pose_range` - a dictionary of pose ranges for each axis. The keys of the dictionary are ``roll``,
-      ``pitch``, and ``yaw``. The position is sampled from the flat patches of the terrain.
-    * :attr:`velocity_range` - a dictionary of velocity ranges for each axis and rotation. The keys of the dictionary
-      are ``x``, ``y``, ``z``, ``roll``, ``pitch``, and ``yaw``.
-
-    The values are tuples of the form ``(min, max)``. If the dictionary does not contain a particular key,
-    the position is set to zero for that axis.
-
-    Note:
-        The function expects the terrain to have valid flat patches under the key "init_pos". The flat patches
-        are used to sample the random pose for the robot.
-
-    Raises:
-        ValueError: If the terrain does not have valid flat patches under the key "init_pos".
-    """
     # access the used quantities (to enable type-hinting)
     asset: FiniteArticulation = env.scene[asset_cfg.name]
     terrain: MeshTerrainImporter = env.scene.terrain
 
     # obtain all flat patches corresponding to the valid poses
-    valid_positions: torch.Tensor = terrain.terrain_origins
+    valid_positions: torch.Tensor = terrain.flat_patches
 
-    print("valid_positions", valid_positions.shape)
     # sample random valid poses
     ids = torch.randint(0, valid_positions.shape[0], size=(len(env_ids),), device=env.device)
     positions = valid_positions[ids]
     positions += asset.data.default_root_state[env_ids, :3]
-    positions[:, 2] += 0.1
-
-    print("positions", asset.data.default_root_state[env_ids, :3])
-    print("positions", valid_positions[ids])
-    print("positions", positions)
+    positions[:, 2] += 0.05 # to avoid collision with the terrain
 
 
     # sample random orientations

@@ -32,6 +32,8 @@ from dataclasses import MISSING
 
 from isaac_neuromeka.env.managers import*
 
+import matplotlib.pyplot as plt
+
 class CustomManagerBasedRLEnv(ManagerBasedRLEnv):
     def __init__(self, cfg: ManagerBasedRLEnvCfg, render_mode: str | None = None, **kwargs):
         # -- container for extra information
@@ -39,6 +41,8 @@ class CustomManagerBasedRLEnv(ManagerBasedRLEnv):
         super().__init__(cfg, render_mode, **kwargs)
         # -- container for delay randomization
         self.delay_steps = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
+
+        self.figure =     plt.figure(figsize=(10, 4))
 
     def _pre_observation_compute_step(self):
         return
@@ -103,18 +107,35 @@ class CustomManagerBasedRLEnv(ManagerBasedRLEnv):
         images = self.scene.sensors["camera"].data.output["rgb"]
         images = images.float() / 255.0
 
+        depths = self.scene.sensors["camera"].data.output["depth"]
+        depths[torch.isnan(depths)] = 0
+        depths[torch.isinf(depths)] = 0
+
+
+
         # visualize the first image in the batch using matplotlib (for debugging)
-        import matplotlib.pyplot as plt
 
 
         img = images[0].cpu().numpy()
+        
+        depth_img = depths[0].cpu().numpy()
+    
+        plt.subplot(1, 2, 1)
+        plt.figure(self.figure.number)
+        plt.clf()
+        plt.subplot(1, 2, 1)
         plt.imshow(img)
         plt.title("Camera RGB Image")
         plt.axis("off")
+        plt.subplot(1, 2, 2)
+        plt.imshow(depth_img, cmap="gray")
+        plt.title("Camera Depth Image")
+        plt.axis("off")
+        plt.tight_layout()
         plt.draw()
         plt.pause(0.001)
-        plt.clf()
-        
+
+
 
 
         # return observations, rewards, resets and extras
