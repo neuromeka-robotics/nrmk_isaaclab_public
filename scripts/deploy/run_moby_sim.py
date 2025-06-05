@@ -45,10 +45,7 @@ from controllers.simple_ik import SimpleIKSolver
 # from test_utils.command import KeyboardPoseCommand
 
 
-
 # subscribes task space target pose and publishes state information
-
-
 def main():
     import importlib.resources as resources
     
@@ -116,23 +113,24 @@ def main():
             arm_cmd = ik_solver.solve(joint_pos=arm_joint_pos,target_ee_pos=task_space_cmd).reshape(env.num_envs, -1)
             joint_cmd[:, :6] = arm_cmd
 
-            # visualize images
-            img = obs_np["image"][0].astype(np.float32) / 255.0
-            depth_img = obs_np["depth_image"][0].astype(np.float32) 
+            if args_cli.debug_vis:
+                # visualize images
+                img = obs_np["image"][0].astype(np.float32) / 255.0
+                depth_img = obs_np["depth_image"][0].astype(np.float32) 
 
-            plt.figure(figure.number)
-            plt.clf()
-            plt.subplot(1, 2, 1)
-            plt.imshow(img)
-            plt.title("Published RGB Image")
-            plt.axis("off")
-            plt.subplot(1, 2, 2)
-            plt.imshow(depth_img, cmap="gray")
-            plt.title("Published Depth Image")
-            plt.axis("off")
-            plt.tight_layout()
-            plt.draw()
-            plt.pause(0.001)
+                plt.figure(figure.number)
+                plt.clf()
+                plt.subplot(1, 2, 1)
+                plt.imshow(img)
+                plt.title("Published RGB Image")
+                plt.axis("off")
+                plt.subplot(1, 2, 2)
+                plt.imshow(depth_img, cmap="gray")
+                plt.title("Published Depth Image")
+                plt.axis("off")
+                plt.tight_layout()
+                plt.draw()
+                plt.pause(0.001)
 
             wait_time = env.control_dt - (time.time() - start)
             if args_cli.real_time and wait_time > 0:
@@ -146,37 +144,3 @@ def main():
 if __name__ == "__main__":
     # run the main execution
     main()
-
-
-        # images = self.scene.sensors["camera_front"].data.output["rgb"]
-        # images = images.float() / 255.0
-
-        # depths = self.scene.sensors["camera_front"].data.output["depth"]
-        # depths[torch.isnan(depths)] = 0
-        # depths[torch.isinf(depths)] = 0
-
-
-
-        # # visualize the first image in the batch using matplotlib (for debugging)
-
-
-        # img = images[0].cpu().numpy()
-        
-        # depth_img = depths[0].cpu().numpy()
-    
-        # plt.subplot(1, 2, 1)
-        # plt.figure(self.figure.number)
-        # plt.clf()
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(img)
-        # plt.title("Camera RGB Image")
-        # plt.axis("off")
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(depth_img, cmap="gray")
-        # plt.title("Camera Depth Image")
-        # plt.axis("off")
-        # plt.tight_layout()
-        # plt.draw()
-        # plt.pause(0.001)
-
-
