@@ -1,0 +1,11 @@
+isaaclab_task: "Moby-Deploy"
+
+# For IK. TODO: use moby urdf
+indy_urdf_path: "isaac_neuromeka/assets/model/urdf/indy7_simplified.urdf"
+
+communication:
+  sim_ip: "localhost"
+  ports: 
+    state: 8080
+    tcp_control: 8081
+    base_control: 8082

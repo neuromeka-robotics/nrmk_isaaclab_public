@@ -14,13 +14,14 @@ import torch
 from isaaclab.app import AppLauncher
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Train an RL agent with NRMK-RL.")
+parser = argparse.ArgumentParser(description="")
 
 parser.add_argument("--debug_vis", action="store_true", default=False, help="Usage during real robot experiments.")
 parser.add_argument("--real_time", action="store_true", default=False, help="Run in real-time")
 
 """Launch Isaac Sim Simulator first."""
 AppLauncher.add_app_launcher_args(parser)
+parser.set_defaults(enable_cameras=True) # (Override) Enable cameras by default
 args_cli = parser.parse_args()
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
@@ -53,7 +54,7 @@ def main():
     
     # Load the YAML configuration file
     parent_path = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(parent_path, "config", "indy_sim.yaml")
+    yaml_path = os.path.join(parent_path, "config", "moby_sim.yaml")
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
@@ -72,16 +73,6 @@ def main():
     env = EnvWrapper(env, debug_vis=args_cli.debug_vis)
     obs, infos = env.reset()
 
-    # debug_info = {
-    #     "point_cloud": torch.zeros((1, 3), dtype=torch.float32),
-    #     "voxels": torch.zeros((1, 3), dtype=torch.float32),
-    #     "point_cloud2": torch.zeros((1, 3), dtype=torch.float32),
-    # }
-    # def debug_vis_callback(debug_msg):
-    #     nonlocal debug_info
-    #     if debug_msg is not None:
-    #         debug_info = debug_msg
-
 
     # DEFINE PUB & SUB CLIENTS
     state_pub = ZmqPublisher(ip=sim_ip, port=ports["state"])
@@ -89,25 +80,23 @@ def main():
     task_space_cmd = torch.Tensor([0.3563, -0.1829, 0.5132, 0.0, 0.0, 1.0, 0.0])  # [x, y, z, qw, qx, qy, qz]
     task_space_cmd = task_space_cmd.to(env.device, dtype=torch.float32) 
 
-    def cmd_callback(control_msg):
+    def tcp_cmd_callback(control_msg):
         nonlocal task_space_cmd
         if control_msg is not None:
             task_space_cmd = torch.from_numpy(control_msg).to(env.device)
         
-    # def command_callback(command_msg):
-    #     nonlocal target_ee_pose
-    #     if command_msg is not None:
-    #         target_ee_pose = command_msg
 
-    cmd_sub = ZmqSubscriber(ip=sim_ip, port=ports["control"]).async_start(cmd_callback)
-    # debug_msg_listener = ZmqSubscriber(ip=sim_ip, port=8890).async_start(debug_vis_callback)
-
+    tcp_cmd_sub = ZmqSubscriber(ip=sim_ip, port=ports["tcp_control"]).async_start(tcp_cmd_callback)
 
     
     # Low-level control
     urdf_path = resources.files("isaac_neuromeka.assets").joinpath("model", "urdf", "indy7_simplified.urdf")
     ik_solver = SimpleIKSolver(urdf_path, device=env.device)
     joint_cmd = torch.zeros((1, env.num_actions), dtype=torch.float32)
+
+    # for image debugging
+    import matplotlib.pyplot as plt
+    figure = plt.figure(figsize=(10, 4))
 
     # Start simulation
     while simulation_app.is_running():
@@ -122,14 +111,28 @@ def main():
             obs_np = {k: v.cpu().numpy() for k, v in infos["observations"]["policy"].items()}
             state_pub.broadcast(obs_np)
 
-           # IK for arm control
+            # IK for arm control
             arm_joint_pos = torch.from_numpy(obs_np["q"][:,:6]).to(device=ik_solver.device, dtype=torch.float32)
             arm_cmd = ik_solver.solve(joint_pos=arm_joint_pos,target_ee_pos=task_space_cmd).reshape(env.num_envs, -1)
             joint_cmd[:, :6] = arm_cmd
 
+            # visualize images
+            img = obs_np["image"][0].astype(np.float32) / 255.0
+            depth_img = obs_np["depth_image"][0].astype(np.float32) 
 
-            # env.update_command(target_ee_pose)
-            # env.update_debug_vis(point_cloud=debug_info["point_cloud"], voxels=debug_info["voxels"], point_cloud2=debug_info["point_cloud2"])
+            plt.figure(figure.number)
+            plt.clf()
+            plt.subplot(1, 2, 1)
+            plt.imshow(img)
+            plt.title("Published RGB Image")
+            plt.axis("off")
+            plt.subplot(1, 2, 2)
+            plt.imshow(depth_img, cmap="gray")
+            plt.title("Published Depth Image")
+            plt.axis("off")
+            plt.tight_layout()
+            plt.draw()
+            plt.pause(0.001)
 
             wait_time = env.control_dt - (time.time() - start)
             if args_cli.real_time and wait_time > 0:
@@ -143,3 +146,37 @@ def main():
 if __name__ == "__main__":
     # run the main execution
     main()
+
+
+        # images = self.scene.sensors["camera_front"].data.output["rgb"]
+        # images = images.float() / 255.0
+
+        # depths = self.scene.sensors["camera_front"].data.output["depth"]
+        # depths[torch.isnan(depths)] = 0
+        # depths[torch.isinf(depths)] = 0
+
+
+
+        # # visualize the first image in the batch using matplotlib (for debugging)
+
+
+        # img = images[0].cpu().numpy()
+        
+        # depth_img = depths[0].cpu().numpy()
+    
+        # plt.subplot(1, 2, 1)
+        # plt.figure(self.figure.number)
+        # plt.clf()
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(img)
+        # plt.title("Camera RGB Image")
+        # plt.axis("off")
+        # plt.subplot(1, 2, 2)
+        # plt.imshow(depth_img, cmap="gray")
+        # plt.title("Camera Depth Image")
+        # plt.axis("off")
+        # plt.tight_layout()
+        # plt.draw()
+        # plt.pause(0.001)
+
+

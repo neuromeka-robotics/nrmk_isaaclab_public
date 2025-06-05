@@ -97,10 +97,9 @@ class MobySceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=2500.0),
     )
 
-
     
-    camera = TiledCameraCfg(
-        prim_path="/World/envs/env_.*/robot/base_footprint/camera",
+    camera_front = TiledCameraCfg(
+        prim_path="/World/envs/env_.*/robot/base_footprint/camera_front", # TODO: adjust the pose
         offset=TiledCameraCfg.OffsetCfg(pos=(0.5, 0.0, 0.1), rot=(1.0, 0.0, 0.0, 0.0), convention="world"),
         data_types = ["rgb", "depth"],
         spawn=sim_utils.PinholeCameraCfg(
@@ -127,10 +126,12 @@ class ObservationsCfg:
         op_state = ObsTerm(func=mdp.op_state)
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel, noise=Unoise(n_min=-0.05, n_max=0.05)) 
         base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.1, n_max=0.1))
+        image = ObsTerm(func=mdp.image_unnormalized, params={"sensor_cfg": SceneEntityCfg("camera_front"), "data_type": "rgb"})
+        depth_image = ObsTerm(func=mdp.image_unnormalized, params={"sensor_cfg": SceneEntityCfg("camera_front"), "data_type": "depth"})
 
         def __post_init__(self):
             self.enable_corruption = True
-            self.concatenate_terms = True
+            self.concatenate_terms = False
 
 
     # observation groups

@@ -10,15 +10,16 @@ class SimpleIKSolver:
     def __init__(self, urdf_path, device="cuda"):
         self.target_ee_pose = None
         self.kin_chain = pk.build_chain_from_urdf( open(urdf_path).read())
-        self.robot_state = {}
+        # self.robot_state = {}
         self.device = device
 
 
-    def set_state(self, robot_state:dict):
-        self.robot_state = robot_state
+    # def set_state(self, robot_state:dict):
+    #     self.robot_state = robot_state
 
-    def solve(self, target_ee_pos:torch.Tensor, step_size=0.2, iterations = 5, damping=0.1):
-        joint_pos = torch.from_numpy(self.robot_state["q"]).to(device=self.device, dtype=torch.float32)
+
+    def solve(self, joint_pos:torch.Tensor, target_ee_pos:torch.Tensor, step_size=0.2, iterations = 5, damping=0.1):
+        # joint_pos = torch.from_numpy(self.robot_state["q"]).to(device=self.device, dtype=torch.float32)
         
         new_joint_pos = joint_pos.clone()
         tcp_chain = pk.SerialChain(self.kin_chain, "tcp").to(device=self.device)
