@@ -35,7 +35,7 @@ import isaac_neuromeka.tasks  # noqa: F401
 from env_wrapper.env_wrapper_base import EnvWrapper
 
 # Communication
-from zmq_wrapper.broadcast import ZmqPublisher, ZmqSubscriber
+# from zmq_wrapper.broadcast import ZmqPublisher, ZmqSubscriber
 import os
 
 # Low-level control
@@ -72,7 +72,7 @@ def main():
 
 
     # DEFINE PUB & SUB CLIENTS
-    state_pub = ZmqPublisher(ip=sim_ip, port=ports["state"])
+    # state_pub = ZmqPublisher(ip=sim_ip, port=ports["state"])
 
     task_space_cmd = torch.Tensor([0.3563, -0.1829, 0.5132, 0.0, 0.0, 1.0, 0.0])  # [x, y, z, qw, qx, qy, qz]
     task_space_cmd = task_space_cmd.to(env.device, dtype=torch.float32) 
@@ -83,7 +83,7 @@ def main():
             task_space_cmd = torch.from_numpy(control_msg).to(env.device)
         
 
-    tcp_cmd_sub = ZmqSubscriber(ip=sim_ip, port=ports["tcp_control"]).async_start(tcp_cmd_callback)
+    # tcp_cmd_sub = ZmqSubscriber(ip=sim_ip, port=ports["tcp_control"]).async_start(tcp_cmd_callback)
 
     
     # Low-level control
@@ -106,7 +106,7 @@ def main():
 
             # obs to numpy
             obs_np = {k: v.cpu().numpy() for k, v in infos["observations"]["policy"].items()}
-            state_pub.broadcast(obs_np)
+            # state_pub.broadcast(obs_np)
 
             # IK for arm control
             arm_joint_pos = torch.from_numpy(obs_np["q"][:,:6]).to(device=ik_solver.device, dtype=torch.float32)

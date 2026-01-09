@@ -4,10 +4,11 @@ import numpy as np
 import torch
 from collections.abc import Sequence
 from isaaclab.envs.mdp.actions import JointAction, actions_cfg
-from isaaclab.envs import ManagerBasedEnv
+from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
 from isaaclab.managers import SceneEntityCfg
-from isaac_neuromeka.env.rl_task_custom_env import CustomManagerBasedRLEnv, RLEnvWithIK
+# from isaac_neuromeka.env.rl_task_custom_env import CustomManagerBasedRLEnv, RLEnvWithIK
+from isaac_neuromeka.env.rl_task_custom_env import RLEnvWithIK
 
 # IK stuff
 from isaaclab.controllers import (
@@ -32,7 +33,7 @@ class CustomJointPositionAction(JointAction):
     cfg: actions_cfg.JointPositionActionCfg
     """The configuration of the action term."""
 
-    def __init__(self, cfg: actions_cfg.JointPositionActionCfg, env: CustomManagerBasedRLEnv):
+    def __init__(self, cfg: actions_cfg.JointPositionActionCfg, env: ManagerBasedRLEnv):
         # initialize the action term
         super().__init__(cfg, env)
         # use default joint positions as offset
@@ -66,7 +67,7 @@ class JointResidualAction(JointAction):
     cfg: ResidualJointActionCfg
     """The configuration of the action term."""
 
-    def __init__(self, cfg: ResidualJointActionCfg, env: ManagerBasedEnv):
+    def __init__(self, cfg: ResidualJointActionCfg, env: ManagerBasedRLEnv):
         # initialize the action term
         super().__init__(cfg, env)
     
@@ -152,7 +153,7 @@ class IKResidualAction(JointResidualAction):
 class JointVelocityAction(JointAction):
     cfg: actions_cfg.JointActionCfg
     
-    def __init__(self, cfg: actions_cfg.JointActionCfg, env: ManagerBasedEnv):
+    def __init__(self, cfg: actions_cfg.JointActionCfg, env: ManagerBasedRLEnv):
         super().__init__(cfg, env)
         self.joint_vel_target = torch.zeros_like(self._asset.data.joint_vel)
         
@@ -171,7 +172,7 @@ class JointVelocityAction(JointAction):
 class ClampedJointPositionAction(CustomJointPositionAction):
     cfg: ClampedJointActionCfg
 
-    def __init__(self, cfg: ClampedJointActionCfg, env: CustomManagerBasedRLEnv):
+    def __init__(self, cfg: ClampedJointActionCfg, env: ManagerBasedRLEnv):
         # initialize the action term
         super().__init__(cfg, env)
         # use default joint positions as offset

@@ -9,7 +9,7 @@ from isaaclab.managers import SceneEntityCfg
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
-    from isaac_neuromeka.env.rl_task_custom_env import CustomManagerBasedRLEnv
+    # from isaac_neuromeka.env.rl_task_custom_env import CustomManagerBasedRLEnv
 
 from isaac_neuromeka.assets.articulation import FiniteArticulation
 
@@ -90,7 +90,7 @@ def body_vel_b(
 Privileged information.
 """
 
-def joint_friction(env: CustomManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+def joint_friction(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """The joint friction of the asset.
 
     Note: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their friction returned.
@@ -99,7 +99,7 @@ def joint_friction(env: CustomManagerBasedRLEnv, asset_cfg: SceneEntityCfg = Sce
     asset: FiniteArticulation = env.scene[asset_cfg.name]
     return asset.data.joint_friction[:, asset_cfg.joint_ids]
 
-def joint_damping(env: CustomManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
+def joint_damping(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     """The joint damping of the asset.
 
     Note: Only the joints configured in :attr:`asset_cfg.joint_ids` will have their damping returned.
@@ -108,7 +108,7 @@ def joint_damping(env: CustomManagerBasedRLEnv, asset_cfg: SceneEntityCfg = Scen
     asset: FiniteArticulation = env.scene[asset_cfg.name]
     return asset.data.joint_damping[:, asset_cfg.joint_ids]
 
-def action_delay_steps(env: CustomManagerBasedRLEnv) -> torch.Tensor:
+def action_delay_steps(env: ManagerBasedRLEnv) -> torch.Tensor:
     
     if hasattr(env, "delay_steps"):
         return env.delay_steps.reshape(-1, 1)
@@ -116,7 +116,7 @@ def action_delay_steps(env: CustomManagerBasedRLEnv) -> torch.Tensor:
         return  torch.zeros((env.num_envs, 1), device=env.device, dtype=torch.long)
 
 def image_unnormalized(
-    env: ManagerBasedEnv,
+    env: ManagerBasedRLEnv,
     sensor_cfg: SceneEntityCfg = SceneEntityCfg("tiled_camera"),
     data_type: str = "rgb",
     convert_perspective_to_orthogonal: bool = False,

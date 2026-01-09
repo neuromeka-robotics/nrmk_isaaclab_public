@@ -7,7 +7,8 @@ from . import indy_env_cfg, moby_env_cfg, learning
 
 gym.register(
     id="Indy-Deploy",
-    entry_point="isaac_neuromeka.env.rl_task_custom_env:CustomManagerBasedRLEnv",
+    # entry_point="isaac_neuromeka.env.rl_task_custom_env:CustomManagerBasedRLEnv",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": indy_env_cfg.IndyDeployEnvCfg,
@@ -18,7 +19,7 @@ gym.register(
 
 gym.register(
     id="Indy-Deploy-Debug",
-    entry_point="isaac_neuromeka.env.rl_task_custom_env:CustomManagerBasedRLEnv",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": indy_env_cfg.IndyDeployEnvRSLRL,
@@ -29,7 +30,7 @@ gym.register(
 
 gym.register(
     id="Moby-Deploy",
-    entry_point="isaac_neuromeka.env.rl_task_custom_env:CustomManagerBasedRLEnv",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": moby_env_cfg.MobyDeployEnvCfg,

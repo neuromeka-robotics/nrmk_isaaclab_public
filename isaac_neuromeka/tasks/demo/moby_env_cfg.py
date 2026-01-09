@@ -76,10 +76,10 @@ class MobySceneCfg(InteractiveSceneCfg):
     #     usd_path="/home/nrmk/Documents/usd_test/mesh_test.usd",
     # )
     
-    terrain = MeshTerrainImporterCfg(
-        prim_path="/World/mesh",
-        obj_dir = "isaac_neuromeka/assets/terrain_meshes/demo0"
-    )
+    # terrain = MeshTerrainImporterCfg(
+    #     prim_path="/World/mesh",
+    #     obj_dir = "isaac_neuromeka/assets/terrain_meshes/demo0"
+    # )
     
 
     # robots
@@ -161,16 +161,16 @@ class ActionsCfg:
 @configclass
 class EventCfg:
     """Configuration for events."""
-    # reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
+    reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
-    reset_robot_pose = EventTerm(
-        func=mdp.reset_pose_mesh_terrain,
-        mode="reset",
-        params={
-            "pose_range":  {"yaw": (0.0, 3.14)},
-            "velocity_range":  {"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-        },
-    )
+    # reset_robot_pose = EventTerm(
+    #     func=mdp.reset_pose_mesh_terrain,
+    #     mode="reset",
+    #     params={
+    #         "pose_range":  {"yaw": (0.0, 3.14)},
+    #         "velocity_range":  {"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+    #     },
+    # )
 
     # TODO: fix them
     randomize_joint_friction = EventTerm(
