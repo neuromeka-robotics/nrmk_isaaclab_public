@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pdb
+import pdb  # noqa:F401
 from typing import TYPE_CHECKING
 
 import torch
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
 from isaac_neuromeka.assets.articulation import FiniteArticulation
+
 
 def object_is_lifted(
     env: ManagerBasedRLEnv, minimal_height: float, object_cfg: SceneEntityCfg = SceneEntityCfg("object")
@@ -34,11 +35,8 @@ def object_is_lifted(
     # return torch.where(torch.logical_and(object.data.root_pos_w[:, 2] > minimal_height, object_ee_distance < 0.3), 1.0, 0.0)
     # #####
 
-def action_w_object_condition(
-    env: ManagerBasedRLEnv,
-    threshold: float,
-    penalty_scale: float
-) -> torch.Tensor:
+
+def action_w_object_condition(env: ManagerBasedRLEnv, threshold: float, penalty_scale: float) -> torch.Tensor:
     ## compute action L2
     action_l2 = torch.sum(torch.square(env.action_manager.action - env.action_manager.prev_action), dim=1)
 
@@ -54,10 +52,8 @@ def action_w_object_condition(
     # rewarded if the object is lifted above the threshold
     return torch.where(distance < threshold, action_l2 * penalty_scale, action_l2)
 
-def object_z_distance(
-        env: ManagerBasedRLEnv,
-        std: float
-) -> torch.Tensor:
+
+def object_z_distance(env: ManagerBasedRLEnv, std: float) -> torch.Tensor:
     # extract the used quantities (to enable type-hinting)
     robot: RigidObject = env.scene["robot"]
     object: RigidObject = env.scene["object"]
@@ -69,7 +65,7 @@ def object_z_distance(
     distance = torch.abs(des_pos_w[:, 2] - object.data.root_pos_w[:, 2])
     # rewarded if the object is lifted above the threshold
     # return 1 - torch.tanh(distance / std)
-    return torch.where(env.episode_length_buf > 30, 1 - torch.tanh(distance / std), 0.)  # 1s for 30Hz controller
+    return torch.where(env.episode_length_buf > 30, 1 - torch.tanh(distance / std), 0.0)  # 1s for 30Hz controller
 
 
 def object_height(env: ManagerBasedRLEnv, object_cfg: SceneEntityCfg = SceneEntityCfg("object")) -> torch.Tensor:
@@ -122,7 +118,7 @@ def object_goal_distance(
     des_pos_b = command[:, :3]
     des_pos_w, _ = combine_frame_transforms(robot.data.root_state_w[:, :3], robot.data.root_state_w[:, 3:7], des_pos_b)
     distance = torch.norm(des_pos_w - object.data.root_pos_w[:, :3], dim=1)
-    return torch.where(env.episode_length_buf > 30, 1 - torch.tanh(distance / std), 0.)
+    return torch.where(env.episode_length_buf > 30, 1 - torch.tanh(distance / std), 0.0)
     # ############
     # n_iter = int(env.common_step_counter / 24)
     # max_iter = 3000

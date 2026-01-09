@@ -1,16 +1,14 @@
-import pdb
+import pdb  # noqa:F401
 from collections.abc import Sequence
 from dataclasses import MISSING
 
-import numpy as np
-from isaaclab.envs.mdp.commands import UniformPoseCommand
-from isaaclab.utils.math import quat_from_euler_xyz, quat_unique
-from isaaclab.utils import configclass
-from isaaclab.envs import ManagerBasedEnv
-from isaaclab.envs.mdp.commands.commands_cfg import UniformPoseCommandCfg
-
-from pynput.keyboard import Key
 import torch
+from isaaclab.envs import ManagerBasedEnv
+from isaaclab.envs.mdp.commands import UniformPoseCommand
+from isaaclab.envs.mdp.commands.commands_cfg import UniformPoseCommandCfg
+from isaaclab.utils import configclass
+from isaaclab.utils.math import quat_from_euler_xyz, quat_unique
+from pynput.keyboard import Key
 
 from isaac_neuromeka.utils.helper import KeyboardListener
 
@@ -30,11 +28,11 @@ class KeyboardPoseCommand(UniformPoseCommand):
     def __init__(self, cfg: DefaultUniformPoseCommandCfg, env: ManagerBasedEnv):
         super().__init__(cfg, env)
 
-        self.keyboard_listener = KeyboardListener(key_targets=[
-            Key.left, Key.up, Key.right, Key.down,
-            'a', 'w', 'd', 's'])
+        self.keyboard_listener = KeyboardListener(
+            key_targets=[Key.left, Key.up, Key.right, Key.down, "a", "w", "d", "s"]
+        )
 
-        n_bins = 20.
+        n_bins = 20.0
         self.delta_command = self.DeltaCommand()
         self.delta_command.pos_x = (self.cfg.ranges.pos_x[1] - self.cfg.ranges.pos_x[0]) / n_bins
         self.delta_command.pos_y = (self.cfg.ranges.pos_y[1] - self.cfg.ranges.pos_y[0]) / n_bins
@@ -54,7 +52,9 @@ class KeyboardPoseCommand(UniformPoseCommand):
             self.euler_angles[env_ids, 0] = self.cfg.default_ee_pose[3]
             self.euler_angles[env_ids, 1] = self.cfg.default_ee_pose[4]
             self.euler_angles[env_ids, 2] = self.cfg.default_ee_pose[5]
-        quat = quat_from_euler_xyz(self.euler_angles[env_ids, 0], self.euler_angles[env_ids, 1], self.euler_angles[env_ids, 2])
+        quat = quat_from_euler_xyz(
+            self.euler_angles[env_ids, 0], self.euler_angles[env_ids, 1], self.euler_angles[env_ids, 2]
+        )
         # make sure the quaternion has real part as positive
         self.pose_command_b[env_ids, 3:] = quat_unique(quat) if self.cfg.make_quat_unique else quat
 
@@ -70,23 +70,27 @@ class KeyboardPoseCommand(UniformPoseCommand):
                 self.pose_command_b[:, 1] -= self.delta_command.pos_y
             if keyboard_data["value"][Key.down]:
                 self.pose_command_b[:, 1] += self.delta_command.pos_y
-            if keyboard_data["value"]['w']:
+            if keyboard_data["value"]["w"]:
                 self.pose_command_b[:, 2] += self.delta_command.pos_z
-            if keyboard_data["value"]['s']:
+            if keyboard_data["value"]["s"]:
                 self.pose_command_b[:, 2] -= self.delta_command.pos_z
 
             self.pose_command_b[:, :3] = torch.clamp(
                 self.pose_command_b[:, :3],
-                min=torch.tensor([self.cfg.ranges.pos_x[0], self.cfg.ranges.pos_y[0], self.cfg.ranges.pos_z[0]],
-                                 device=self.pose_command_b.device),
-                max=torch.tensor([self.cfg.ranges.pos_x[1], self.cfg.ranges.pos_y[1], self.cfg.ranges.pos_z[1]],
-                                 device=self.pose_command_b.device)
+                min=torch.tensor(
+                    [self.cfg.ranges.pos_x[0], self.cfg.ranges.pos_y[0], self.cfg.ranges.pos_z[0]],
+                    device=self.pose_command_b.device,
+                ),
+                max=torch.tensor(
+                    [self.cfg.ranges.pos_x[1], self.cfg.ranges.pos_y[1], self.cfg.ranges.pos_z[1]],
+                    device=self.pose_command_b.device,
+                ),
             )
 
             # update orientation
-            if keyboard_data["value"]['a']:
+            if keyboard_data["value"]["a"]:
                 self.euler_angles[:, 2] -= self.delta_command.yaw
-            if keyboard_data["value"]['d']:
+            if keyboard_data["value"]["d"]:
                 self.euler_angles[:, 2] += self.delta_command.yaw
 
             self.euler_angles[:, 2] = torch.clamp(
@@ -103,4 +107,3 @@ class EmptyPoseCommand(UniformPoseCommand):
 
     def _update_command(self):
         pass
-

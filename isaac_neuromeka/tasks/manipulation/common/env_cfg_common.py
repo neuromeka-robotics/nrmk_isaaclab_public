@@ -1,30 +1,24 @@
 from __future__ import annotations
 
-import pdb
+import math
+import pdb  # noqa:F401
 from dataclasses import MISSING
 
-import numpy as np
-import isaaclab.sim as sim_utils
-from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import ActionTermCfg as ActionTerm
-from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
-from isaaclab.managers import ManagerTermBase
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
-from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
-from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
-from isaaclab.utils.noise import AdditiveGaussianNoiseCfg as Gnoise
 
-from isaac_neuromeka.env.rl_task_custom_env import HistoryManager
-from isaac_neuromeka.utils.etc import EmptyCfg
+# from isaaclab.scene import InteractiveSceneCfg
+# from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+from isaaclab.utils.noise import AdditiveGaussianNoiseCfg as Gnoise
+from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise  # noqa: F401
+
 import isaac_neuromeka.mdp as mdp
-import math
 
 ##
 # MDP settings
@@ -36,14 +30,14 @@ class CommandsCfg:
     """Command terms for the MDP."""
 
     class ConFig:
-        default_ee_pose = [0.3563, -0.1829,  0.5132]
-    
+        default_ee_pose = [0.3563, -0.1829, 0.5132]
+
     ee_pose = mdp.UniformPoseCommandCfg(
         asset_name="robot",
-        body_name=MISSING, # TODO: multiple body names
+        body_name=MISSING,  # TODO: multiple body names
         resampling_time_range=(6.0, 10.0),
         debug_vis=True,
-        ranges=mdp.UniformPoseCommandCfg.Ranges( 
+        ranges=mdp.UniformPoseCommandCfg.Ranges(
             pos_x=(ConFig.default_ee_pose[0], ConFig.default_ee_pose[0] + 0.3),
             pos_y=(ConFig.default_ee_pose[1] - 0.2, ConFig.default_ee_pose[1] + 0.2),
             pos_z=(ConFig.default_ee_pose[2] - 0.3, ConFig.default_ee_pose[2]),
@@ -71,42 +65,38 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        joint_pos = ObsTerm(func=mdp.joint_pos, noise=Gnoise(std=0.05))
-        joint_vel = ObsTerm(func=mdp.finite_joint_vel, noise=Gnoise(std=0.5))
+        joint_pos = ObsTerm(func=mdp.joint_pos, noise=Gnoise(std=0.05), history_length=3)
+        joint_vel = ObsTerm(func=mdp.finite_joint_vel, noise=Gnoise(std=0.5), history_length=3)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
 
-        joint_pos_history = ObsTerm(func=HistoryManager, params={"name": "joint_pos", "length": 2})
-        joint_vel_history = ObsTerm(func=HistoryManager, params={"name": "joint_vel", "length": 2})
         action_history = ObsTerm(func=mdp.action_history)
 
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
-            
 
     # observation groups
-    policy: PolicyCfg  = PolicyCfg()
+    policy: PolicyCfg = PolicyCfg()
+
 
 @configclass
 class TeacherObsCfg(ObservationsCfg):
-    
+
     @configclass
     class Proprio(ObsGroup):
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Gnoise(std=0.01))
-        joint_vel = ObsTerm(func=mdp.finite_joint_vel, noise=Gnoise(std=0.1))
+        joint_pos = ObsTerm(func=mdp.joint_pos_rel, noise=Gnoise(std=0.01), history_length=3)
+        joint_vel = ObsTerm(func=mdp.finite_joint_vel, noise=Gnoise(std=0.1), history_length=3)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
 
-        joint_pos_history = ObsTerm(func=HistoryManager, params={"name": "joint_pos", "length": 2})
-        joint_vel_history = ObsTerm(func=HistoryManager, params={"name": "joint_vel", "length": 2})
         action_history = ObsTerm(func=mdp.action_history)
 
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
-    
+
     @configclass
     class Privileged(ObsGroup):
         """Observations for policy group."""
@@ -116,11 +106,11 @@ class TeacherObsCfg(ObservationsCfg):
         joint_damping = ObsTerm(func=mdp.joint_damping)
         action_delay = ObsTerm(func=mdp.action_delay_steps)
         # TODO: action delay
-         
+
         def __post_init__(self):
             self.enable_corruption = False
-            self.concatenate_terms = True            
-        
+            self.concatenate_terms = True
+
     proprioception = Proprio()
     privileged = Privileged()
 
@@ -148,8 +138,8 @@ class EventCfg:
             "friction_distribution_params": (0.7, 1.3),
             "armature_distribution_params": (0.75, 1.25),
             "operation": "abs",
-            "distribution": "uniform"
-        }
+            "distribution": "uniform",
+        },
     )
 
     # randomize_joint_stiffness_and_damping = EventTerm(
@@ -180,23 +170,31 @@ class RewardsCfg:
     # task terms
     end_effector_position_tracking = RewTerm(
         func=mdp.end_effector_position_tracking_bounded,
-        weight= 0.1,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING), "command_name": "ee_pose", "distance_max": 0.5},
+        weight=0.1,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
+            "command_name": "ee_pose",
+            "distance_max": 0.5,
+        },
     )
 
     end_effector_orientation_tracking = RewTerm(
         func=mdp.end_effector_orientation_tracking_distance_bounded,
-        weight= 0.05,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING), "command_name": "ee_pose", "distance_max": 0.25 },
+        weight=0.05,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
+            "command_name": "ee_pose",
+            "distance_max": 0.25,
+        },
     )
 
-    ## regularizers    
+    ## regularizers
     end_effector_speed = RewTerm(
         func=mdp.end_effector_speed,
         weight=-0.0005,
         params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING)},
     )
-    
+
     # action penalty
     action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
 
@@ -207,31 +205,25 @@ class RewardsCfg:
         weight=-0.0005,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
-    
+
 
 @configclass
 class CostsCfg:
     """Cost terms for the CMDP."""
 
     joint_vel = RewTerm(
-        func=mdp.joint_vel_cost_relu,
-        weight=1.0,
-        params={"asset_cfg": SceneEntityCfg("robot"), "soft_limit_ratio": 0.9}
+        func=mdp.joint_vel_cost_relu, weight=1.0, params={"asset_cfg": SceneEntityCfg("robot"), "soft_limit_ratio": 0.9}
     )
-    
-    
+
     ee_spd = RewTerm(
         func=mdp.ee_speed_cost_relu,
         weight=1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["tcp"]), "speed_limit": 1.0}   
+        params={"asset_cfg": SceneEntityCfg("robot", body_names=["tcp"]), "speed_limit": 1.0},
     )
-    
-    
+
+
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-
-
-

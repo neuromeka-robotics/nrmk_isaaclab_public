@@ -19,6 +19,7 @@ __version__ = ORBIT_ASSETS_METADATA["package"]["version"]
 # Configuration for different assets.
 ##
 
+from .dual_arm import *
 from .indy import *
 from .moby import *
-from .dual_arm import *
+from .moby200 import *

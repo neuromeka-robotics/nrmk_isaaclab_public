@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pdb
+import pdb  # noqa:F401
 from typing import TYPE_CHECKING
 
 import torch
@@ -10,7 +10,6 @@ from isaaclab.utils.math import subtract_frame_transforms
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
-from isaac_neuromeka.assets.articulation import FiniteArticulation
 from isaac_neuromeka.assets.objects import RigidObject_w_FullPCL
 
 

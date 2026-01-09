@@ -12,7 +12,7 @@ The following example shows how to wrap an environment for NRMK-RL:
     env = NrmkRlVecEnvWrapper(env)
 
 """
-import pdb
+import pdb  # noqa:F401
 
 import gymnasium as gym
 import torch
@@ -103,7 +103,7 @@ class NrmkRlVecEnvWrapper:
     def num_cost_terms(self) -> int:
         """Returns the number of cost terms in the environment."""
         return self.env.cost_manager.num_cost_terms
-    
+
     """
     Properties
     """
@@ -111,14 +111,14 @@ class NrmkRlVecEnvWrapper:
     def get_observations(self) -> tuple[torch.Tensor, dict]:
         """Returns the current observations of the environment."""
         return self.get_flat_observation(self.obs_dict), {"observations": self.obs_dict}
-        
+
     def get_flat_observation(self, obs_dict) -> torch.Tensor:
-        
+
         # cases
         ## For training: actor_obs_list exists and each obs is a tensor
         ## For testing or some cases: some obs are dict and some are tensor
         ## At the end, we want to concat all the tensors
-        
+
         if hasattr(self.cfg, "actor_obs_list"):
 
             obs_list_to_concat = []
@@ -126,8 +126,10 @@ class NrmkRlVecEnvWrapper:
                 obs_tensor = None
                 # if obs_dict[key] is a dict, then concatenate the values
                 if isinstance(obs_dict[key], dict):
-                    #obs_tensor = torch.cat(list(obs_dict[key].values()), dim=-1)
-                    obs_tensor = torch.cat([value.reshape(self.num_envs, -1) for value in obs_dict[key].values()], dim=-1) # need to check if this works
+                    # obs_tensor = torch.cat(list(obs_dict[key].values()), dim=-1)
+                    obs_tensor = torch.cat(
+                        [value.reshape(self.num_envs, -1) for value in obs_dict[key].values()], dim=-1
+                    )  # need to check if this works
                 else:
                     obs_tensor = obs_dict[key].reshape(self.num_envs, -1)
                 obs_list_to_concat.append(obs_tensor)
@@ -137,7 +139,7 @@ class NrmkRlVecEnvWrapper:
                 return torch.cat(list(obs_dict["policy"].values()), dim=-1)
             else:
                 return obs_dict["policy"]
-        
+
     @property
     def episode_length_buf(self) -> torch.Tensor:
         """The episode length buffer."""
@@ -188,8 +190,6 @@ class NrmkRlVecEnvWrapper:
     def close(self):  # noqa: D102
         return self.env.close()
 
-
     # Used for NRMK-RL collision avoidance pretraining
     def set_estimation(self, estimation: torch.Tensor):
         self.env.set_estimation(estimation)
-

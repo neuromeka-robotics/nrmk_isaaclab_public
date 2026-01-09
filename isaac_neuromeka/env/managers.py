@@ -1,27 +1,25 @@
-from isaaclab.managers import ActionManager
-from isaaclab.envs import ManagerBasedEnv
-from isaaclab.assets import Articulation
-from isaaclab.envs import ManagerBasedRLEnv, ManagerBasedRLEnvCfg
-from prettytable import PrettyTable
-
 from collections.abc import Sequence
 
-from isaaclab.managers import (
-    EventManager,
-    ObservationManager,
-    CommandManager,
-    CurriculumManager,
-    RewardManager,
-    TerminationManager,
-    ManagerTermBase,
-    ManagerTermBaseCfg,
-    SceneEntityCfg,
-)
-
-import numpy as np
 import torch
 
+# from isaaclab.assets import Articulation
+from isaaclab.envs import ManagerBasedEnv, ManagerBasedRLEnv  # , ManagerBasedRLEnvCfg
+from isaaclab.managers import (  # noqa: F401
+    ActionManager,
+    CommandManager,
+    CurriculumManager,
+    EventManager,
+    ManagerTermBase,
+    ManagerTermBaseCfg,
+    ObservationManager,
+    RewardManager,
+    SceneEntityCfg,
+    TerminationManager,
+)
+from prettytable import PrettyTable
+
 from isaac_neuromeka.utils.running_stats import TorchRunningStats
+
 
 class CustomObservationManager(ObservationManager):
     def compute_group(self, group_name: str) -> torch.Tensor | dict[str, torch.Tensor]:
@@ -134,7 +132,9 @@ class CustomRewardManager(RewardManager):
             # r_1 + r_2 + ... + r_n
             episodic_sum_avg = torch.mean(self._episode_sums[name][env_ids])
             extras["Episode Reward/" + name] = episodic_sum_avg / self._env.max_episode_length_s
-            extras["Episode Reward/Mean_wo_coeff/" + name] = (episodic_sum_avg / self._env.max_episode_length_s) / abs(term_cfg.weight)
+            extras["Episode Reward/Mean_wo_coeff/" + name] = (episodic_sum_avg / self._env.max_episode_length_s) / abs(
+                term_cfg.weight
+            )
             extras["Episode Reward/Std/" + name] = torch.mean(self._episode_stats[name].standard_deviation()[env_ids])
             # reset episodic sum
             self._episode_sums[name][env_ids] = 0.0
@@ -183,10 +183,9 @@ class CostManager(RewardManager):
         self.num_cost_terms = len(self._term_names)
         for term_name in self._term_names:
             self._episode_stats[term_name] = TorchRunningStats(dim=self.num_envs, device=self.device)
-            
+
         self._reward_buf = None
         self._cost_buf = torch.zeros((self.num_envs, self.num_cost_terms), dtype=torch.float, device=self.device)
-
 
     def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, torch.Tensor]:
         # resolve environment ids
@@ -199,7 +198,9 @@ class CostManager(RewardManager):
             # r_1 + r_2 + ... + r_n
             episodic_sum_avg = torch.mean(self._episode_sums[name][env_ids])
             extras["Episode Cost/" + name] = episodic_sum_avg / self._env.max_episode_length_s
-            extras["Episode Cost/Mean_wo_coeff/" + name] = (episodic_sum_avg / self._env.max_episode_length_s) / abs(term_cfg.weight)
+            extras["Episode Cost/Mean_wo_coeff/" + name] = (episodic_sum_avg / self._env.max_episode_length_s) / abs(
+                term_cfg.weight
+            )
             extras["Episode Cost/Std/" + name] = torch.mean(self._episode_stats[name].standard_deviation()[env_ids])
             # reset episodic sum
             self._episode_sums[name][env_ids] = 0.0
@@ -224,13 +225,12 @@ class CostManager(RewardManager):
             # compute term's value
             value = term_cfg.func(self._env, **term_cfg.params) * term_cfg.weight * dt
             self._cost_buf[:, cost_id] = value
-            
+
             # update episodic sum
             self._episode_sums[name] += value
             self._episode_stats[name].update(value)
-            
+
             cost_id += 1
-            
 
         return self._cost_buf
 
@@ -253,33 +253,3 @@ class CostManager(RewardManager):
         msg += "\n"
 
         return msg
-
-
-
-class HistoryManager(ManagerTermBase):
-    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedEnv):
-        self.cfg = cfg
-        self._env = env
-        self.history_buffer = None  # (N, T, D)
-
-    def reset(self, env_ids: Sequence[int] | None = None) -> None:
-        if self.history_buffer is not None:
-            self.history_buffer[env_ids] = 0.
-
-    def __call__(self, env: ManagerBasedRLEnv, name: str, length: int):
-        if hasattr(env, "observation_manager"):  # at init
-            current_data = env.observation_manager.group_obs[name]
-        else:
-            current_data = getattr(env.scene["robot"].data, name)
-
-        # initialize if not
-        if self.history_buffer is None:
-            self.history_buffer = \
-                torch.zeros((env.num_envs, length + 1, current_data.shape[-1]), device=current_data.device)
-
-        # update history buffer
-        self.history_buffer = torch.roll(self.history_buffer, shifts=-1, dims=1)
-        self.history_buffer[:, -1] = current_data
-
-        return torch.reshape(self.history_buffer[:, :-1], (env.num_envs, -1))
-    
