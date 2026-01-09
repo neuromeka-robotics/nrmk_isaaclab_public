@@ -159,14 +159,12 @@ class EventCfg:
     #     },
     # )
 
-    # TODO: fix them
     randomize_joint_friction = EventTerm(
         func=mdp.randomize_joint_parameters,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names="joint.*"),
-            "friction_distribution_params": (0.7, 1.3),
-            "armature_distribution_params": (0.75, 1.25),
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+            "friction_distribution_params": (0.7, 1.2),
             "operation": "abs",
             "distribution": "uniform",
         },
@@ -201,8 +199,8 @@ class MobyDeployEnvCfg(NrmkRLEnvCfg):
         """Post initialization."""
         super().__post_init__()
         # task settings
-        self.sim.dt = 1.0 / 120.0
-        self.decimation = 24  # 24 * 1/120 = 0.2s
+        self.sim.dt = 1.0 / 200.0
+        self.decimation = 20  # 20 * 1/200 = 0.1s # Control at 10 Hz
         self.episode_length_s = 100.0
 
         # viewer settings

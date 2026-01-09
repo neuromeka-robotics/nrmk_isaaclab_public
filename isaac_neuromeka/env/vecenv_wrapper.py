@@ -190,6 +190,6 @@ class NrmkRlVecEnvWrapper:
     def close(self):  # noqa: D102
         return self.env.close()
 
-    # Used for NRMK-RL collision avoidance pretraining
-    def set_estimation(self, estimation: torch.Tensor):
-        self.env.set_estimation(estimation)
+    # # Used for NRMK-RL collision avoidance pretraining
+    # def set_estimation(self, estimation: torch.Tensor):
+    #     self.env.set_estimation(estimation)

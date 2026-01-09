@@ -32,9 +32,6 @@ import os
 
 import isaaclab_tasks  # noqa: F401
 
-# Low-level control
-from controllers.simple_ik import SimpleIKSolver
-
 # EnvWrapper
 from env_wrapper.env_wrapper_base import EnvWrapper
 from isaaclab_tasks.utils import parse_env_cfg
@@ -55,11 +52,11 @@ def main():
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
-    communication_config = config["communication"]
-    sim_ip = communication_config["sim_ip"]
-    ports = communication_config["ports"]
+    # communication_config = config["communication"]
+    # sim_ip = communication_config["sim_ip"]
+    # ports = communication_config["ports"]
 
-    print(f"Communication config: {communication_config}")
+    # print(f"Communication config: {communication_config}")
 
     # IsaacLab task
     task = config["isaaclab_task"]
@@ -69,28 +66,14 @@ def main():
     env = EnvWrapper(env, debug_vis=args_cli.debug_vis)
     obs, infos = env.reset()
 
-    # DEFINE PUB & SUB CLIENTS
-    # state_pub = ZmqPublisher(ip=sim_ip, port=ports["state"])
-
-    task_space_cmd = torch.Tensor([0.3563, -0.1829, 0.5132, 0.0, 0.0, 1.0, 0.0])  # [x, y, z, qw, qx, qy, qz]
-    task_space_cmd = task_space_cmd.to(env.device, dtype=torch.float32)
-
-    def tcp_cmd_callback(control_msg):
-        nonlocal task_space_cmd
-        if control_msg is not None:
-            task_space_cmd = torch.from_numpy(control_msg).to(env.device)
-
-    # tcp_cmd_sub = ZmqSubscriber(ip=sim_ip, port=ports["tcp_control"]).async_start(tcp_cmd_callback)
-
-    # Low-level control
-    urdf_path = resources.files("isaac_neuromeka.assets").joinpath("model", "urdf", "indy7_simplified.urdf")
-    ik_solver = SimpleIKSolver(urdf_path, device=env.device)
-    joint_cmd = torch.zeros((1, env.num_actions), dtype=torch.float32)
-
     # for image debugging
     import matplotlib.pyplot as plt
 
     figure = plt.figure(figsize=(10, 4))
+
+    action_buffer = torch.zeros((env.num_envs, env.num_actions), dtype=torch.float32, device=env.device)  # [v_x, w_z ]
+    action_buffer[:, 0] = 1.0
+    action_buffer[:, 1] = 1.0
 
     # Start simulation
     while simulation_app.is_running():
@@ -99,16 +82,11 @@ def main():
             start = time.time()
 
             # step simulation
-            obs, _, _, infos = env.step(joint_cmd)
+            obs, _, _, infos = env.step(action_buffer)
 
             # obs to numpy
             obs_np = {k: v.cpu().numpy() for k, v in infos["observations"]["policy"].items()}
             # state_pub.broadcast(obs_np)
-
-            # IK for arm control
-            arm_joint_pos = torch.from_numpy(obs_np["q"][:, :6]).to(device=ik_solver.device, dtype=torch.float32)
-            arm_cmd = ik_solver.solve(joint_pos=arm_joint_pos, target_ee_pos=task_space_cmd).reshape(env.num_envs, -1)
-            joint_cmd[:, :6] = arm_cmd
 
             if args_cli.debug_vis:
                 # visualize images

@@ -208,21 +208,6 @@ class RewardsCfg:
 
 
 @configclass
-class CostsCfg:
-    """Cost terms for the CMDP."""
-
-    joint_vel = RewTerm(
-        func=mdp.joint_vel_cost_relu, weight=1.0, params={"asset_cfg": SceneEntityCfg("robot"), "soft_limit_ratio": 0.9}
-    )
-
-    ee_spd = RewTerm(
-        func=mdp.ee_speed_cost_relu,
-        weight=1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names=["tcp"]), "speed_limit": 1.0},
-    )
-
-
-@configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
 

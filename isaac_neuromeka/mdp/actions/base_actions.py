@@ -114,8 +114,7 @@ class FloatingBaseVelocityAction(ActionTerm):
     # Runs at physics dt
     def apply_actions(self, env_ids: Sequence[int] | None = None):
         if env_ids is None:
-            env_ids = slice(None)
-
+            env_ids = torch.arange(self.num_envs, device=self.device)
         # # Robot_state
         robot_velocity_w = self._robot._finite_body_vel_w[env_ids, 0]  # shape (N, 6)
 
@@ -127,68 +126,25 @@ class FloatingBaseVelocityAction(ActionTerm):
             robot_quat_w, robot_velocity_w[:, 3:6]
         )  # 로봇의 body frame에서의 각속도 (N, 3)
 
-        # Input rate limiting
-        # dv_f_des = (self.desired_velocity[env_ids, self.front_idx] - self.prev_desired_velocity[env_ids, self.front_idx])
-        # dw_z_des = (self.desired_velocity[env_ids, 5] - self.prev_desired_velocity[env_ids, 5])
-
-        # dv_f_des = torch.clamp(dv_f_des, -self.max_linear_acc, self.max_linear_acc)
-        # dw_z_des = torch.clamp(dw_z_des, -self.max_angular_acc, self.max_angular_acc)
-        # v_f_des =  (self.prev_desired_velocity[env_ids, self.front_idx] + dv_f_des)
-        # w_z_des = self.prev_desired_velocity[env_ids, 5] + dw_z_des
-
-        # self.prev_desired_velocity[env_ids, self.front_idx] = v_f_des
-        # self.prev_desired_velocity[env_ids, 5] = w_z_des
-
         v_f_des = self.desired_velocity[env_ids, self.front_idx]
         w_z_des = self.desired_velocity[env_ids, 5]
 
         # # Differential drive model
         euler_angles = euler_xyz_from_quat(robot_quat_w)
-        # current_yaw = euler_angles[2]  # 로봇의 현재 yaw (N,)
-
-        # v_x_world = v_f_des * torch.cos(current_yaw)
-        # v_y_world = v_f_des * torch.sin(current_yaw)
 
         # TODO: max speed limit
         root_state = self._robot.data.root_state_w[env_ids].clone()
-        # target_vel = root_state[:, 7:13].clone()
-
-        # TODO implement for front_idx other than 0
-        # target_vel[:, 0] = v_x_world
-        # target_vel[:, 1] = v_y_world
-        # target_vel[:, 5] = w_z_des
-
-        # target_vel[:, 0] = v_x_world
-        # target_vel[:, 1] = v_y_world
-        # target_vel[:, 5] = w_z_des
 
         ext_force_w = torch.zeros_like(robot_velocity_w[:, :3])
         ext_force_w[:, 2] = self.z_kp * (self.fixed_z_pose - root_state[:, 2])  # TODO: combine terrain height.
         ext_force_w[:, 2] -= self.z_kd * robot_velocity_w[:, 2]
 
         ext_force_b = quat_apply_inverse(robot_quat_w, ext_force_w)  # [N, 3]
-
         ext_force_b[:, 0] = self.xy_kp * (v_f_des - robot_velocity_b[:, 0])  # X
         ext_force_b[:, 1] = self.xy_kp * (0.0 - robot_velocity_b[:, 1])  # Y
-
-        # Can lead to instability if mixed with write_root_velocity_to_sim
-        # ext_force_b[:, :2] -= self.xy_damping * robot_velocity_b[:, :2]
         ext_force_b[:, :2] -= self.xy_kd * robot_velocity_b[:, :2]
 
         ext_torque_b = torch.zeros_like(robot_velocity_w[:, 3:6])
-
-        # ## Angle PD controller
-        # # # Compute angle between base z axis and world z axis
-        # base_z_w = quat_apply(robot_quat_w, torch.tensor([0.0, 0.0, 1.0], device=robot_quat_w.device).unsqueeze(0).repeat(robot_quat_w.shape[0], 1))
-        # rot_axis = torch.cross(base_z_w, torch.tensor([0.0, 0.0, 1.0], device=robot_quat_w.device).unsqueeze(0).repeat(robot_quat_w.shape[0], 1), dim=1)
-        # rot_axis_norm = torch.norm(rot_axis, dim=1) + 1e-6
-        # rot_axis = rot_axis / rot_axis_norm.unsqueeze(1)
-
-        # angle_err = torch.asin(torch.clamp(rot_axis_norm, -1.0, 1.0))  # small angle approx
-
-        # external_wrench[:, 3:6] = self.angle_gain * angle_err.unsqueeze(1) * rot_axis
-        # external_wrench[:, 3:6] += -self.angle_damping * robot_velocity_w[:, 3:6]
-
         ## Simple implementation using euler angles
         ext_torque_b[:, 0] = self.angle_kp * (-euler_angles[0])  # roll
         ext_torque_b[:, 1] = self.angle_kp * (-euler_angles[1])  # pitch
@@ -196,11 +152,7 @@ class FloatingBaseVelocityAction(ActionTerm):
 
         ext_torque_b[:, 0] -= self.angle_kd * robot_angvel_b[:, 0]
         ext_torque_b[:, 1] -= self.angle_kd * robot_angvel_b[:, 1]
-
         ext_torque_b[:, 2] = self.yaw_kp * (w_z_des - robot_angvel_b[:, 2])
-
-        # Can lead to instability if mixed with write_root_velocity_to_sim
-        # ext_torque_b[:, 2] -= self.angle_kd * robot_angvel_b[:, 2]
         ext_torque_b[:, 2] -= self.yaw_kd * robot_angvel_b[:, 2]
 
         # self._robot.write_root_velocity_to_sim(target_vel, env_ids)
@@ -211,24 +163,6 @@ class FloatingBaseVelocityAction(ActionTerm):
         self._robot.set_joint_position_target(
             torch.zeros_like(self._robot._data.joint_pos_target[env_ids]), env_ids=env_ids
         )
-
-        # print("Quaternion (w, x, y, z):", self._robot.data.root_quat_w[:5].cpu().numpy())
-        # print("Yaw (rad):", yaw[:5].cpu().numpy())
-
-    # def apply_actions(self, env_ids: Sequence[int] | None = None):
-    #     if env_ids is None:
-    #         env_ids = slice(None)
-
-    #     vx = self._raw_actions[:, 0] * self.cfg.velocity_scale
-    #     wz = self._raw_actions[:, 1] * self.cfg.yaw_rate_scale
-
-    #     # (num_envs, 6) tensor: [vx, vy, vz, wx, wy, wz]
-    #     root_velocity = torch.zeros((self.num_envs, 6), device=vx.device)
-    #     root_velocity[:, 0] = vx           # X축 선속도
-    #     root_velocity[:, 2] = 0.0          # Z축 선속도 고정 (수직 이동 차단)
-    #     root_velocity[:, 5] = wz           # Z축 회전속도 (yaw)
-
-    #     self._robot.write_root_velocity_to_sim(root_velocity, env_ids)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         if debug_vis:

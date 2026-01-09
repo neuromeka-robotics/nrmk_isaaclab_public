@@ -20,7 +20,6 @@ from isaac_neuromeka.env.rl_task_env_cfg import NrmkRLEnvCfg
 from isaac_neuromeka.tasks.manipulation.common.env_cfg_common import (  # noqa: F401
     ActionsCfg,
     CommandsCfg,
-    CostsCfg,
     EventCfg,
     ObservationsCfg,
     RewardsCfg,
