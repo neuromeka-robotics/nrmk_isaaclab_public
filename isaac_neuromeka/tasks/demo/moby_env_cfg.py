@@ -59,7 +59,7 @@ class MobySceneCfg(InteractiveSceneCfg):
     ground = AssetBaseCfg(
         prim_path="/World/ground",
         spawn=sim_utils.GroundPlaneCfg(),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -1.0)),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)),
     )
 
     # mesh = TerrainImporterCfg(

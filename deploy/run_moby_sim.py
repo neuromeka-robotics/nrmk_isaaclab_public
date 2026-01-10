@@ -31,6 +31,8 @@ simulation_app = app_launcher.app
 import os
 
 import isaaclab_tasks  # noqa: F401
+from communication.data_helpers import _to_uint8_image, publish_array
+from communication.zenoh_bus import ZenohBus
 
 # EnvWrapper
 from env_wrapper.env_wrapper_base import EnvWrapper
@@ -52,11 +54,22 @@ def main():
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
-    # communication_config = config["communication"]
-    # sim_ip = communication_config["sim_ip"]
-    # ports = communication_config["ports"]
+    # -- Communication setup --
+    communication_config = config["communication"]
+    topic_namespace = communication_config.get("topic_namespace", "isaaclab/moby_sim")
 
-    # print(f"Communication config: {communication_config}")
+    zenoh_bus = ZenohBus()
+
+    # subscriber example
+    def _array_handler(key: str, msg: bytes):
+        if "meta" in key:
+            print(f"Received meta: {key} : {msg.decode('utf-8')}")
+        else:
+            arr = np.frombuffer(msg, dtype=np.float32)
+            tensor = torch.from_numpy(arr)
+            print(f"Received tensor: {key} : {tensor}")
+
+    zenoh_bus.subscribe(f"{topic_namespace}/obs/**", _array_handler)
 
     # IsaacLab task
     task = config["isaaclab_task"]
@@ -84,14 +97,22 @@ def main():
             # step simulation
             obs, _, _, infos = env.step(action_buffer)
 
-            # obs to numpy
-            obs_np = {k: v.cpu().numpy() for k, v in infos["observations"]["policy"].items()}
-            # state_pub.broadcast(obs_np)
+            # # obs to numpy
+            # obs_np = {k: v.cpu().numpy() for k, v in infos["observations"]["policy"].items()}
+            # # state_pub.broadcast(obs_np)
+
+            # Publish states
+            obs_dict = infos["observations"]["policy"]
+            for k, v in obs_dict.items():
+                # print(f"{k}: {v.shape}, {v.dtype}")
+                publish_array(zenoh_bus, f"{topic_namespace}/obs/{k}", v, publish_meta=True)
 
             if args_cli.debug_vis:
                 # visualize images
-                img = obs_np["image"][0].astype(np.float32) / 255.0
-                depth_img = obs_np["depth_image"][0].astype(np.float32)
+
+                img = _to_uint8_image(obs_dict["image"][0]).cpu().numpy()
+                # img = obs_np["image"][0].astype(np.float32) / 255.0
+                depth_img = obs_dict["depth_image"][0].cpu().numpy()
 
                 plt.figure(figure.number)
                 plt.clf()

@@ -2,8 +2,9 @@ isaaclab_task: "Moby-Deploy"
 
 
 communication:
-  sim_ip: "localhost"
-  ports:
-    state: 8080
-    tcp_control: 8081
-    base_control: 8082
+  topic_namespace: "isaaclab/moby_sim"
+  shm_config: # TODO: add shared memory config options if needed
+    enabled: false
+    shm_size: 256 * 1024 * 1024  # 256 MB
+
+  # TODO: add Zenoh config options if needed
