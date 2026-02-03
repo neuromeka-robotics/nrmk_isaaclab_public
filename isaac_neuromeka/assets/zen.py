@@ -22,7 +22,10 @@ ZEN_CFG = FiniteArticulationCfg(
             max_depenetration_velocity=5.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=True, solver_position_iteration_count=8, solver_velocity_iteration_count=0
+            enabled_self_collisions=False,
+            # enabled_self_collisions=True,
+            solver_position_iteration_count=8,
+            solver_velocity_iteration_count=0,
         ),
     ),
     init_state=FiniteArticulationCfg.InitialStateCfg(
@@ -42,30 +45,27 @@ ZEN_CFG = FiniteArticulationCfg(
             "rarm_1_joint": 0.0,
             "rarm_2_joint": 0.0,
             "rarm_3_joint": 0.0,
-            "rarm_4_joint": 0.0,
+            "rarm_4_joint": -1.0,
             "rarm_5_joint": 0.0,
             "rarm_6_joint": 0.0,
             # Left arm joints
             "larm_1_joint": 0.0,
             "larm_2_joint": 0.0,
             "larm_3_joint": 0.0,
-            "larm_4_joint": 0.0,
+            "larm_4_joint": -1.0,
             "larm_5_joint": 0.0,
             "larm_6_joint": 0.0,
         },
     ),
     actuators={
-        # Wheel joints - velocity control
-        "wheel_joints": ImplicitActuatorCfg(
-            joint_names_expr=["r_wheel_joint", "l_wheel_joint"],
-            velocity_limit_sim=2.0,
-            effort_limit_sim=50.0,
-            stiffness=0.0,  # velocity control only
-            damping=20.0,
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
-        ),
+        # # Wheel joints - velocity control
+        # "wheel_joints": ImplicitActuatorCfg(
+        #     joint_names_expr=["r_wheel_joint", "l_wheel_joint"],
+        #     velocity_limit_sim=2.0,
+        #     effort_limit_sim=50.0,
+        #     stiffness=0.0,  # velocity control only
+        #     damping=20.0,
+        # ),
         # Rotation joint
         "rotation_joint": ImplicitActuatorCfg(
             joint_names_expr=["rotate_joint"],
@@ -73,99 +73,47 @@ ZEN_CFG = FiniteArticulationCfg(
             effort_limit_sim=100.0,
             stiffness=100.0,  # 100
             damping=20.0,  # 20
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
         ),
         # Waist joints - Fixed/disabled to prevent movement
         "waist_joints": ImplicitActuatorCfg(
             joint_names_expr=["waist_1_joint", "waist_2_joint"],
             velocity_limit_sim=2.0,
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,
-            # damping=2000.0,
-            effort_limit_sim=100.0,
-            stiffness=100.0,
-            damping=20.0,
+            effort_limit_sim=500.0,
+            stiffness=500.0,
+            damping=25.0,
         ),
         # Neck and head joints
         "head_joints": ImplicitActuatorCfg(
             joint_names_expr=["neck_joint", "head_joint"],
             velocity_limit_sim=2.0,
-            effort_limit_sim=100.0,
+            effort_limit_sim=200.0,
             stiffness=100.0,
-            damping=20.0,
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
+            damping=15.0,
         ),
         # Right arm joints - Indy arm0 → Paxini rarm_1_joint
-        "rarm_0": ImplicitActuatorCfg(
-            joint_names_expr=["rarm_1_joint"],
+        "arm_0": ImplicitActuatorCfg(
+            joint_names_expr=["rarm_1_joint", "larm_1_joint"],
             velocity_limit_sim=2.775073510670984,  # Indy arm0
             effort_limit_sim=431.97,  # Indy arm0
-            stiffness=100.0,
+            stiffness=150.0,
             damping=20.0,  # Indy arm0
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
         ),
         # Right arm joints - Indy arm1 → Paxini rarm_2_joint
-        "rarm_1": ImplicitActuatorCfg(
-            joint_names_expr=["rarm_2_joint"],
+        "arm_1": ImplicitActuatorCfg(
+            joint_names_expr=["rarm_2_joint", "larm_2_joint"],
             velocity_limit_sim=2.775073510670984,  # Indy arm1
             effort_limit_sim=197.23,  # Indy arm1
-            stiffness=100.0,
-            damping=20.0,  # Indy arm1
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
+            stiffness=80.0,
+            damping=10.0,  # Indy arm1
         ),
         # Right arm joints - Indy arm2 → Paxini rarm_[3-6]_joint
-        "rarm_2": ImplicitActuatorCfg(
-            joint_names_expr=["rarm_[3-6]_joint"],
+        "arm_2": ImplicitActuatorCfg(
+            joint_names_expr=["rarm_[3-6]_joint", "larm_[3-6]_joint"],
             velocity_limit_sim=3.2986722862692828,  # Indy arm2
             effort_limit_sim=79.79,  # Indy arm2
-            stiffness=100.0,
-            damping=20.0,  # Indy arm2
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
+            stiffness=60.0,
+            damping=8.0,  # Indy arm2
         ),
-        # Left arm joints - Indy arm0 → Paxini larm_1_joint
-        "larm_0": ImplicitActuatorCfg(
-            joint_names_expr=["larm_1_joint"],
-            velocity_limit_sim=2.775073510670984,  # Indy arm0
-            effort_limit_sim=431.97,  # Indy arm0
-            stiffness=100.0,
-            damping=20.0,  # Indy arm0
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
-        ),
-        # Left arm joints - Indy arm1 → Paxini larm_2_joint
-        "larm_1": ImplicitActuatorCfg(
-            joint_names_expr=["larm_2_joint"],
-            velocity_limit_sim=2.775073510670984,  # Indy arm1
-            effort_limit_sim=197.23,  # Indy arm1
-            stiffness=100.0,
-            damping=20.0,  # Indy arm1
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
-        ),
-        # Left arm joints - Indy arm2 → Paxini larm_[3-6]_joint
-        "larm_2": ImplicitActuatorCfg(
-            joint_names_expr=["larm_[3-6]_joint"],
-            velocity_limit_sim=3.2986722862692828,  # Indy arm2
-            effort_limit_sim=79.79,  # Indy arm2
-            stiffness=100.0,
-            damping=20.0,  # Indy arm2
-            # effort_limit_sim=100000.0,
-            # stiffness=10000000.0,  #100
-            # damping=2000.0,  #20
-        ),
-        # Hand joints - right hand (position lock at 0.0)
     },
-    soft_joint_pos_limit_factor=0.95,
+    soft_joint_pos_limit_factor=0.97,
 )
