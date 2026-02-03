@@ -50,26 +50,26 @@ def main():
 
     # Load the YAML configuration file
     parent_path = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(parent_path, "config", "moby_sim.yaml")
+    yaml_path = os.path.join(parent_path, "config", "zen_sim.yaml")
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
     # -- Communication setup --
     communication_config = config["communication"]
-    topic_namespace = communication_config.get("topic_namespace", "moby_sim")
+    topic_namespace = communication_config.get("topic_namespace", "sim")
 
     zenoh_bus = ZenohBus()
 
-    # subscriber example
-    def _array_handler(key: str, msg: bytes):
-        if "meta" in key:
-            print(f"Received meta: {key} : {msg.decode('utf-8')}")
-        else:
-            arr = np.frombuffer(msg, dtype=np.float32)
-            tensor = torch.from_numpy(arr)
-            print(f"Received tensor: {key} : {tensor}")
+    # # subscriber example
+    # def _array_handler(key: str, msg: bytes):
+    #     if "meta" in key:
+    #         print(f"Received meta: {key} : {msg.decode('utf-8')}")
+    #     else:
+    #         arr = np.frombuffer(msg, dtype=np.float32)
+    #         tensor = torch.from_numpy(arr)
+    #         print(f"Received tensor: {key} : {tensor}")
 
-    zenoh_bus.subscribe(f"{topic_namespace}/obs/**", _array_handler)
+    # zenoh_bus.subscribe(f"{topic_namespace}/obs/**", _array_handler)
 
     # IsaacLab task
     task = config["isaaclab_task"]
@@ -85,8 +85,29 @@ def main():
     figure = plt.figure(figsize=(10, 4))
 
     action_buffer = torch.zeros((env.num_envs, env.num_actions), dtype=torch.float32, device=env.device)  # [v_x, w_z ]
-    action_buffer[:, 0] = 1.0
-    action_buffer[:, 1] = 1.0
+
+    # Subscribe to command topics and fill action_buffer
+    def _base_command_handler(key: str, msg: bytes):
+        arr = np.frombuffer(msg, dtype=np.float32)
+        tensor = torch.from_numpy(arr).to(env.device)
+        # First 2 dimensions are for base control
+        action_buffer[:, :2] = tensor[:2]
+
+    def _arm_command_handler(key: str, msg: bytes):
+        arr = np.frombuffer(msg, dtype=np.float32)
+        tensor = torch.from_numpy(arr).to(env.device)
+        # Rest of dimensions are for arm control
+        action_buffer[:, -12:] = tensor
+
+    def _body_command_handler(key: str, msg: bytes):
+        arr = np.frombuffer(msg, dtype=np.float32)
+        tensor = torch.from_numpy(arr).to(env.device)
+        # Middle 5 dimensions are for body control
+        action_buffer[:, 2:7] = tensor
+
+    zenoh_bus.subscribe(f"{topic_namespace}/base_command", _base_command_handler)
+    zenoh_bus.subscribe(f"{topic_namespace}/arm_command", _arm_command_handler)
+    zenoh_bus.subscribe(f"{topic_namespace}/body_command", _body_command_handler)
 
     # Start simulation
     while simulation_app.is_running():
@@ -95,6 +116,7 @@ def main():
             start = time.time()
 
             # step simulation
+            print("joint commands:", action_buffer)
             obs, _, _, infos = env.step(action_buffer)
 
             # # obs to numpy

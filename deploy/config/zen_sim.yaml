@@ -1,10 +1,14 @@
-isaaclab_task: "Moby-Deploy"
+isaaclab_task: "Zen-Deploy"
 
 
 communication:
-  topic_namespace: "moby_sim"
+  topic_namespace: "sim"
   shm_config: # TODO: add shared memory config options if needed
     enabled: false
     shm_size: 256 * 1024 * 1024  # 256 MB
 
   # TODO: add Zenoh config options if needed
+
+
+  base_command_topic: "base_command"
+  arm_command_topic: "arm_command"
