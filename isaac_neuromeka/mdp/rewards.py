@@ -121,6 +121,7 @@ def finite_joint_vel_l2(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = Scen
 
 
 def action_second_rate_l2(env: ManagerBasedRLEnv) -> torch.Tensor:
+    # TODO: currently broken
     return torch.sum(
         torch.square(
             (env.action_manager.action - env.action_manager.prev_action)

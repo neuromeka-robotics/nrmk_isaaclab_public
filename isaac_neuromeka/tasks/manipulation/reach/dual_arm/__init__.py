@@ -8,7 +8,8 @@ from . import env_cfg, learning
 
 gym.register(
     id="Dual-Arm-Reach",
-    entry_point="isaac_neuromeka.env.rl_task_custom_env:CustomManagerBasedRLEnv",
+    # entry_point="isaac_neuromeka.env.rl_task_custom_env:CustomManagerBasedRLEnv",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": env_cfg.DualArmReachEnvCfg,
