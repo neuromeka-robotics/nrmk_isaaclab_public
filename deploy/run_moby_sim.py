@@ -31,8 +31,8 @@ simulation_app = app_launcher.app
 import os
 
 import isaaclab_tasks  # noqa: F401
-from ai_framework.communication.data_helpers import _to_uint8_image
-from ai_framework.communication.zenoh_bus import ZenohBus
+from deploy.utils.data import _to_uint8_image
+from deploy.utils.communication import ZenohBus
 
 # EnvWrapper
 from env_wrapper.env_wrapper_base import EnvWrapper

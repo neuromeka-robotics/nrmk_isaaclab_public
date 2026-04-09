@@ -1,46 +1,56 @@
-# Neuromeka-IsaacLab
-
-This is a project template that builds upon [*IsaacLab*](https://github.com/isaac-sim/IsaacLab). Before proceeding, please refer to the installation guides for IsaacLab.
-
-We plan to add new environments and algorithms in future updates.
-
-## Compatibility
-- Tested with Isaac Sim **4.5.0** and IsaacLab **v2.0.1**
+# Neuromeka-IsaacLab (NAMY navigation)
+This repository contains minimal examples for navigating NAMY in a simulated environment. Specifically, it demonstrates:
+- Creating a simulated environment using a scanned scene mesh file
+- Spawning the NAMY robot within the environment
+- Streaming RGB and depth data from the robot’s RGB-D sensor
+- Controlling the NAMY robot using a keyboard
 
 ## Installation
+### Prerequisite
+#### 1. IsaacSim, IsaacLab
+Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2.2.1/source/setup/installation/binaries_installation.html) for IsaacSim and IsaacLab installation. 
 
-### **Prerequisite: Install Git LFS**
-Ensure that [Git LFS](https://git-lfs.github.com/) is installed before proceeding.
+The repository was tested with Isaac Sim **4.5.0** and IsaacLab **v2.2.1**.
 
-For detailed installation instructions, follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/binaries_installation.html). Additionally, for installing Isaac Sim, refer to [Isaac Sim Workstation Installation](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_workstation.html).
+For IsaacSim installation, we recommend binary installation rather than pip installation.
 
-### **Installing the Extension**
-Install this repository as a Python package. It will be installed with a symbolic link, ensuring that any modifications in the repository are reflected during execution.
-```bash
-cd neuromeka-isaac
+#### 2. Extra
+After installing IsaacLab, a dedicated conda environment will be created (e.g., `env_isaaclab`).
+Install extra packages.
+```
+conda activate env_isaaclab
+pip install eclipse-zenoh open3d matplotlib pynput
+```
+Additionally, install [Git LFS](https://git-lfs.github.com/).
+
+### Installing the neuromeka isaaclab extension
+Clone the repository and install it as a package in the dedicated conda environment.
+```
+conda activate env_isaaclab
+cd nrmk_isaaclab_public
 pip install -e .
 ```
 
 ## Usage Examples
-
-We recommend using a **Conda environment** from IsaacLab.
-
-### **Training a Model**
-Activate the Conda environment and start training:
-```bash
-conda activate env_isaaclab
-python scripts/rsl_rl/train.py --task Indy-Reach --num_envs 4000 --headless --logger tensorboard
+Run simulator
+```
+python deploy/run_namy_sim.py
+```
+Run keyboard controller and visualizer
+```
+python deploy/run_namy_keyboard.py
+python deploy/run_namy_keyboard.py --debug_vis  # To visualize image and pointcloud data
 ```
 
-### **Playing a Trained Model**
-```bash
-conda activate env_isaaclab
-python scripts/rsl_rl/play.py --task Indy-Reach --num_envs 1 
-```
+## Custom usecase
+- In `deploy/run_namy_keyboard.py`, replace keyboard command with neural network controller or some other fancy algorithms.
+- In `isaac_neuromeka/tasks/demo/namy_env_cfg.py`, change navigation scene with other opensource mesh file or manually scanned results. Check `NamySceneCfg` inside the file.
 
-You can explore additional tasks in the `neuromeka-isaac/isaac_neuromeka/tasks` directory. For example:
-- `neuromeka-isaac/isaac_neuromeka/tasks/manipulation/reach/dual_arm/__init__.py`
-- `neuromeka-isaac/isaac_neuromeka/tasks/manipulation/reach/indy/__init__.py`
+To do this, the core files to examine are as follows:
+- `isaac_neuromeka/tasks/demo/__init__.py`: Gym environment definition
+- `isaac_neuromeka/tasks/demo/namy_env_cfg.py`: NAMY environment
+- `deploy/run_namy_sim.py`: Running simulator
+- `deploy/run_namy_keyboard.py`: Running keyboard controller
 
 ## Setting Up VSCode (Optional)
 

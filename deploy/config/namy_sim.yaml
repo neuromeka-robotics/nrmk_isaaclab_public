@@ -1,0 +1,4 @@
+isaaclab_task: "Namy-Deploy"
+
+communication:
+  topic_namespace: "namy_sim"

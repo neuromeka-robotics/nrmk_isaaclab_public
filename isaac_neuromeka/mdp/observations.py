@@ -48,6 +48,12 @@ def finite_body_vel_b(
 
     return body_vel_b
 
+def joint_pos(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    asset: FiniteArticulation = env.scene[asset_cfg.name]
+    return asset.data.joint_pos[:, asset_cfg.joint_ids]
 
 def finite_joint_vel(
     env: ManagerBasedRLEnv,
@@ -55,7 +61,6 @@ def finite_joint_vel(
 ) -> torch.Tensor:
     asset: FiniteArticulation = env.scene[asset_cfg.name]
     return asset._finite_joint_vel[:, asset_cfg.joint_ids]
-
 
 def joint_pos_history(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     asset: FiniteArticulation = env.scene[asset_cfg.name]

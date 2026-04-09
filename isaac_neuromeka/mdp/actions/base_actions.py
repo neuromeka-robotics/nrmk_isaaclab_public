@@ -161,7 +161,7 @@ class FloatingBaseVelocityAction(ActionTerm):
         )
 
         self._robot.set_joint_position_target(
-            torch.zeros_like(self._robot._data.joint_pos_target[env_ids]), env_ids=env_ids
+            self._robot._data.default_joint_pos[env_ids], env_ids=env_ids
         )
 
     def _set_debug_vis_impl(self, debug_vis: bool):

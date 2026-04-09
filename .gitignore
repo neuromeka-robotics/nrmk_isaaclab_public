@@ -21,3 +21,5 @@ docker/artifacts/
 *.tmp
 
 build/
+.codex
+.asset_hash
