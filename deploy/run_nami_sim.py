@@ -11,7 +11,7 @@ Pre-requisites:
         pip install eclipse-zenoh
         
 How to use:
-    python deploy/run_namy_sim.py
+    python deploy/run_nami_sim.py
 """
 
 from __future__ import annotations
@@ -48,13 +48,13 @@ from env_wrapper.env_wrapper_base import EnvWrapper
 def main():
     # Load the configuration file
     parent_path = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(parent_path, "config", "namy_sim.yaml")
+    yaml_path = os.path.join(parent_path, "config", "nami_sim.yaml")
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
     # Set communication
     communication_config = config["communication"]
-    topic_namespace = communication_config.get("topic_namespace", "namy_sim")
+    topic_namespace = communication_config.get("topic_namespace", "nami_sim")
     zenoh_bus = ZenohBus()
 
     # Create environment for the given IsaacLab task

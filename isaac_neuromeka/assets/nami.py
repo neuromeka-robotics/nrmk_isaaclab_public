@@ -8,11 +8,11 @@ from isaac_neuromeka.assets.articulation import (
     FiniteArticulationCfg,
 )
 
-NAMY_CFG = FiniteArticulationCfg(
+NAMI_CFG = FiniteArticulationCfg(
     class_type=FiniteArticulation,
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/NAMY/NAMY_wo_upper_body_collision.usd",
-        # usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/NAMY/NAMY.usd",  # Use this if you want to include upper body collision, but it may cause difficultly navigating in narrow spaces
+        usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/NAMI/NAMI_wo_upper_body_collision.usd",
+        # usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/NAMI/NAMI.usd",  # Use this if you want to include upper body collision, but it may cause difficultly navigating in narrow spaces
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=True,  # Gravity compensation is used for real-world deployment

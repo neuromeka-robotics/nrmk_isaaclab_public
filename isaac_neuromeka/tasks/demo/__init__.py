@@ -1,6 +1,6 @@
 import gymnasium as gym
 
-from . import indy_env_cfg, learning, moby_env_cfg, zen_env_cfg, namy_env_cfg
+from . import indy_env_cfg, learning, moby_env_cfg, nami_env_cfg, zen_env_cfg
 
 ##
 # Register Gym environments.
@@ -41,11 +41,11 @@ gym.register(
 )
 
 gym.register(
-    id="Namy-Deploy",
+    id="Nami-Deploy",
     entry_point="isaac_neuromeka.env.tracking_viewer_env:TrackingViewerEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": namy_env_cfg.NamyDeployEnvCfg,
+        "env_cfg_entry_point": nami_env_cfg.NamiDeployEnvCfg,
         "rsl_rl_cfg_entry_point": f"{learning.__name__}.rsl_rl_cfg:ReachPPORunnerCfg",
         "nrmk_rl_cfg_entry_point": f"{learning.__name__}.nrmk_rl_cfg:ReachPPORunnerCfg",
     },

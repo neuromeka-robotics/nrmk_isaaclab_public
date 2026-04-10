@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 
-<!-- TEMPORARY!!!!! NAMY is not yet made!!!!! -->
+<!-- TEMPORARY!!!!! NAMI is not yet made!!!!! -->
 
 
-<robot name="namy">
+<robot name="nami">
   <material name="black">
     <color rgba="0.0 0.0 0.0 1.0"/>
   </material>
@@ -67,7 +67,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 -0.04"/>
       <geometry>
-        <mesh filename="package://NAMY_visualization/moby2/meshes/base_bottom.STL"/>
+        <mesh filename="package://NAMI_visualization/moby2/meshes/base_bottom.STL"/>
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1"/>
@@ -220,7 +220,7 @@
     <visual>
       <!-- <origin xyz="-0.0093 0 0.115" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/base_link.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/base_link.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -260,7 +260,7 @@
     <visual>
       <origin xyz="0.009300 -0.000000 -0.090000" rpy="0.000000 -0.000000 0.000001" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L0.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L0.STL" />
       </geometry>
       <material name="">
         <color rgba="0.0 0.0 0.0 1" />
@@ -283,18 +283,18 @@
     <visual>
       <origin xyz="0.001859324 -0.009593379 0" rpy="0.00000398 0 -0.12059899" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L1.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L1.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+  <collision>
       <origin rpy="2.278818 1.570790 2.158219" xyz="0.212505 0.024613 -0.000000" />
       <geometry>
         <cylinder radius="0.12" length="0.38" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="head_pitch">
     <inertial>
@@ -305,7 +305,7 @@
     <visual>
       <origin xyz="-2.582011635e-20 -0.001757 1.928032721e-12" rpy="0 -0.000004 0.000007" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L2_U.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L2_U.STL" />
       </geometry>
       <material name="">
         <color rgba="0.0 0.0 0.0 1" />
@@ -327,18 +327,18 @@
     <visual>
       <origin xyz="1e-06 -1.409748455e-11 0.138257" rpy="0.000004 0.000007 0.000004" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L3_U.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L3_U.STL" />
       </geometry>
       <material name="">
         <color rgba="0.0 0.0 0.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="0.000004 0.000007 0.000004" xyz="0.039302 -0 0.223257" />
       <geometry>
         <sphere radius="0.1" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="dummy_rigid_body_1">
     <inertial>
@@ -365,7 +365,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L2_L.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L2_L.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -387,18 +387,18 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L3_L.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L3_L.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="1.57079 0 0" xyz="0 -0.07 0" />
       <geometry>
         <cylinder radius="0.05" length="0.16" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="left_arm_link_3">
     <inertial>
@@ -415,7 +415,7 @@
     <visual>
       <origin xyz="0.00000000 0.00000093 -0.13599982" rpy="-0.00000432 -0.00000735 -0.00015623" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L4_L.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L4_L.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -431,7 +431,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L5_L.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L5_L.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -453,18 +453,18 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L6_.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L6_.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.14" />
       <geometry>
         <cylinder radius="0.065" length="0.28" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="left_arm_link_6">
     <inertial>
@@ -475,7 +475,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L7_L.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L7_L.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -497,18 +497,18 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L8_L.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L8_L.STL" />
       </geometry>
       <material name="">
         <color rgba="0.0 0.0 0.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="1.57079 0 0" xyz="0 -0.08 0" />
       <geometry>
         <cylinder radius="0.04" length="0.04" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="dummy_rigid_body_3">
     <inertial>
@@ -527,7 +527,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L2_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L2_R.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -549,18 +549,18 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L3_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L3_R.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="1.57079 0 0" xyz="0 -0.07 0" />
       <geometry>
         <cylinder radius="0.05" length="0.16" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="right_arm_link_3">
     <inertial>
@@ -577,7 +577,7 @@
     <visual>
       <origin xyz="0.00000000 -0.00000414 -0.13600018" rpy="0.00001166 -0.00000735 0.00017827" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L4_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L4_R.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -593,7 +593,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L5_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L5_R.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -615,18 +615,18 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L6_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L6_R.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.14" />
       <geometry>
         <cylinder radius="0.065" length="0.28" />
       </geometry>
-    </collision> -->
+    </collision>
   </link>
   <link name="right_arm_link_6">
     <inertial>
@@ -637,7 +637,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L7_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L7_R.STL" />
       </geometry>
       <material name="">
         <color rgba="1.0 1.0 1.0 1" />
@@ -659,18 +659,18 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://NAMY_visualization/EIR/meshes/Link_L8_R.STL" />
+        <mesh filename="package://NAMI_visualization/EIR/meshes/Link_L8_R.STL" />
       </geometry>
       <material name="">
         <color rgba="0.0 0.0 0.0 1" />
       </material>
     </visual>
-    <!-- <collision>
+    <collision>
       <origin rpy="1.57079 0 0" xyz="0 -0.08 0" />
       <geometry>
         <cylinder radius="0.04" length="0.04" />
       </geometry>
-    </collision> -->
+    </collision>
   </link><joint name="joint_floor_to_body" type="fixed">
     <parent link="base_link" />
     <child link="base_link_body" />

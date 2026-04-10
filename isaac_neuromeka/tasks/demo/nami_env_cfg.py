@@ -22,7 +22,7 @@ from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise  # noqa: F401
 
 import isaac_neuromeka.mdp as mdp
 
-from isaac_neuromeka.assets import NAMY_CFG
+from isaac_neuromeka.assets import NAMI_CFG
 from isaac_neuromeka.assets.articulation import FiniteArticulationCfg
 
 # Import common environment configuration
@@ -33,7 +33,7 @@ from isaac_neuromeka.utils.etc import EmptyCfg
 
 
 @configclass
-class NamySceneCfg(InteractiveSceneCfg):
+class NamiSceneCfg(InteractiveSceneCfg):
 
     ##############################
     # Terrain can be set as (1) plane ground (2) scanned scene
@@ -67,7 +67,7 @@ class NamySceneCfg(InteractiveSceneCfg):
     ##############################
 
     # robots
-    robot: FiniteArticulationCfg = NAMY_CFG.replace(prim_path="{ENV_REGEX_NS}/robot")
+    robot: FiniteArticulationCfg = NAMI_CFG.replace(prim_path="{ENV_REGEX_NS}/robot")
 
     # cameras
     camera_front = TiledCameraCfg(
@@ -149,11 +149,11 @@ class TerminationsCfg:
 
 
 @configclass
-class NamyDeployEnvCfg(NrmkRLEnvCfg):
+class NamiDeployEnvCfg(NrmkRLEnvCfg):
     """Configuration for the environment."""
 
     # Scene settings
-    scene: NamySceneCfg = NamySceneCfg(num_envs=1, env_spacing=5.0)
+    scene: NamiSceneCfg = NamiSceneCfg(num_envs=1, env_spacing=5.0)
     observations: ObservationsCfg = ObservationsCfg()
     commands = EmptyCfg()
     actions = ActionsCfg()

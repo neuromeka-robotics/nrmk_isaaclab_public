@@ -1,9 +1,9 @@
-# Neuromeka-IsaacLab (NAMY navigation)
-This repository contains minimal examples for navigating NAMY in a simulated environment. Specifically, it demonstrates:
+# Neuromeka-IsaacLab (NAMI navigation)
+This repository contains minimal examples for navigating NAMI in a simulated environment. Specifically, it demonstrates:
 - Creating a simulated environment using a scanned scene mesh file
-- Spawning the NAMY robot within the environment
+- Spawning the NAMI robot within the environment
 - Streaming RGB and depth data from the robot’s RGB-D sensor
-- Controlling the NAMY robot using a keyboard
+- Controlling the NAMI robot using a keyboard
 
 ## Installation
 ### Prerequisite
@@ -34,23 +34,26 @@ pip install -e .
 ## Usage Examples
 Run simulator
 ```
-python deploy/run_namy_sim.py
+python deploy/run_nami_sim.py
 ```
 Run keyboard controller and visualizer
 ```
-python deploy/run_namy_keyboard.py
-python deploy/run_namy_keyboard.py --debug_vis  # To visualize image and pointcloud data
+python deploy/run_nami_keyboard.py
+python deploy/run_nami_keyboard.py --debug_vis  # To visualize image and pointcloud data
 ```
 
 ## Custom usecase
-- In `deploy/run_namy_keyboard.py`, replace keyboard command with neural network controller or some other fancy algorithms.
-- In `isaac_neuromeka/tasks/demo/namy_env_cfg.py`, change navigation scene with other opensource mesh file or manually scanned results. Check `NamySceneCfg` inside the file.
+- In `deploy/run_nami_keyboard.py`, replace keyboard command with neural network controller or some other fancy algorithms.
+- In `isaac_neuromeka/tasks/demo/nami_env_cfg.py`, change navigation scene with other opensource mesh file or manually scanned results. Check `NamiSceneCfg` in the file. Currently, below three scenes are provided.
+    - `isaac_neuromeka/assets/scene/hm3d_1`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
+    - `isaac_neuromeka/assets/scene/hm3d_2`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
+    - `isaac_neuromeka/assets/scene/nrmk_2nd_floor`: Neuromeka 2nd floor (-> scanned with [BLK2GO](https://shop.leica-geosystems.com/leica-blk/blk2go/overview?c1=GAW_SE_NW&source=USA_RC_BRND&kw=blk2go_exm&utm_source=google&utm_medium=cpc&utm_term=blk2go_exm&utm_campaign=USA__-__Reality_Capture__-__Branded&cr5=773061516399&cr7=c&gad_source=1&gad_campaignid=20547366468&gbraid=0AAAAADnuiFisxx-3b-ZPtg_ZwbxQbzfSl&gclid=Cj0KCQjwv-LOBhCdARIsAM5hdKePRWJ0ettjodu7fIahSKQtW6kiOjItG4iWOboSDgRcVMvLCbLRnZgaAgQuEALw_wcB))
 
-To do this, the core files to examine are as follows:
+Core files to look into are as follows:
 - `isaac_neuromeka/tasks/demo/__init__.py`: Gym environment definition
-- `isaac_neuromeka/tasks/demo/namy_env_cfg.py`: NAMY environment
-- `deploy/run_namy_sim.py`: Running simulator
-- `deploy/run_namy_keyboard.py`: Running keyboard controller
+- `isaac_neuromeka/tasks/demo/nami_env_cfg.py`: NAMI environment
+- `deploy/run_nami_sim.py`: Running simulator
+- `deploy/run_nami_keyboard.py`: Running keyboard controller
 
 ## Setting Up VSCode (Optional)
 

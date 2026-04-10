@@ -8,8 +8,8 @@ Pre-requisites:
         pip install eclipse-zenoh open3d matplotlib pynput
 
 How to use:
-    python deploy/run_namy_keyboard.py
-    python deploy/run_namy_keyboard.py --debug_vis   # To visualize images and pointcloud
+    python deploy/run_nami_keyboard.py
+    python deploy/run_nami_keyboard.py --debug_vis   # To visualize images and pointcloud
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from pynput.keyboard import Key
 from deploy.utils.communication import ZenohBus
 
 
-class NamyKeyboardController:
+class NamiKeyboardController:
     """Tracks pressed keys and converts them into a base action command."""
 
     def __init__(self, linear_speed: float, yaw_speed: float) -> None:
@@ -95,12 +95,12 @@ def main() -> None:
     
     # Load the configuration file
     parent_path = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(parent_path, "config", "namy_sim.yaml")
+    yaml_path = os.path.join(parent_path, "config", "nami_sim.yaml")
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
     # Set communication
-    topic_namespace = config["communication"].get("topic_namespace", "namy_sim")
+    topic_namespace = config["communication"].get("topic_namespace", "nami_sim")
     command_topic = f"{topic_namespace}/action_command"
     image_topic = f"{topic_namespace}/obs/image"
     depth_topic = f"{topic_namespace}/obs/depth_image"
@@ -128,7 +128,7 @@ def main() -> None:
     # Set controller that outputs action command
     # Currently, keyboard is used. (Arrows for +forward/-forward/+yaw/-yaw, Esc for quit)
     # In future, neural network or other fancy algorithms can be used.
-    controller = NamyKeyboardController(
+    controller = NamiKeyboardController(
         linear_speed=ROBOT_CMD_CONFIG["forward"], yaw_speed=ROBOT_CMD_CONFIG["yaw"])
     
     # Set visualizer for debugging
