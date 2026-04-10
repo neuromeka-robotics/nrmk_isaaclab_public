@@ -53,7 +53,7 @@
   <link name="base_link" />
   <!-- moby -->
   <joint name="base_link_to_base_bottom" type="fixed">
-    <origin rpy="0 0 -1.5707963267948966" xyz="0 0.0 0"/>
+    <origin rpy="0 0 -1.5707963267948966" xyz="-0.18 0 0"/>
     <parent link="base_link"/>
     <child link="base_bottom"/>
     <axis xyz="0 0 0"/>
@@ -65,7 +65,7 @@
       <inertia ixx="0.509153241264426" ixy="2.53833699359267E-18" ixz="9.00762561353784E-19" iyy="0.660310298127947" iyz="-2.91849961988583E-17" izz="0.15122527595847"/>
     </inertial>
     <visual>
-      <origin rpy="0 0 0" xyz="0 -0.18 -0.04"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.04"/>
       <geometry>
         <mesh filename="package://NAMY_visualization/moby2/meshes/base_bottom.STL"/>
       </geometry>
@@ -81,7 +81,7 @@
       <inertia ixx="1.2080587036823" ixy="0.000397736016824614" ixz="-0.0073727231620996" iyy="2.03525540160699" iyz="0.000461077930132956" izz="0.940829325385842"/>
     </inertial>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.2 0.18"/>
+      <origin rpy="0 0 0" xyz="0 0.2 0"/>
       <geometry>
         <box size="0.6 0.05 0.8"/>
       </geometry>
@@ -111,9 +111,15 @@
       <geometry>
         <cylinder length="0.035" radius="0.075"/>
       </geometry>
-      <origin rpy="0 0 0" xyz="0 -0.18 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <material name="black"/>
     </visual>
+    <!-- <collision>
+      <geometry>
+        <cylinder length="0.035" radius="0.075"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </collision> -->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="1.5"/>
@@ -136,9 +142,15 @@
       <geometry>
         <cylinder length="0.035" radius="0.075"/>
       </geometry>
-      <origin rpy="0 0 0" xyz="0 -0.18 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <material name="black"/>
     </visual>
+    <!-- <collision>
+      <geometry>
+        <cylinder length="0.035" radius="0.075"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </collision> -->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="1.5"/>

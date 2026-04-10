@@ -195,7 +195,7 @@ class ActionsCfg:
         asset_name="robot",
         velocity_scale=1.0,
         yaw_rate_scale=1.0,
-        fixed_z_pos=0.05,
+        offset_z_pos=0.05,
         angle_kp=5000.0,
         angle_kd=500.0,
         z_kp=5000.0,

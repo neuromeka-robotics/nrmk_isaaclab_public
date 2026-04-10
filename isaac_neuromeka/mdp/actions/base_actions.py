@@ -57,7 +57,7 @@ class FloatingBaseVelocityAction(ActionTerm):
         self.max_front_velocity = self.cfg.max_front_velocity
         self.max_yaw_rate = self.cfg.max_yaw_rate
 
-        self.fixed_z_pose = self.cfg.fixed_z_pos
+        self.offset_z_pos = self.cfg.offset_z_pos
 
         self.z_kp = self.cfg.z_kp
         self.angle_kp = self.cfg.angle_kp
@@ -70,6 +70,82 @@ class FloatingBaseVelocityAction(ActionTerm):
 
         self.yaw_kp = self.cfg.yaw_kp
         self.yaw_kd = self.cfg.yaw_kd
+
+        # Terrain height raycasting state (built lazily, cached per env)
+        self._terrain_wp_mesh = None  # warp mesh built on first call
+        self._terrain_height_cache = torch.zeros(env.num_envs, device=env.device)
+
+    def _build_terrain_warp_mesh(self):
+        """Merge all Mesh prims under the terrain prim into a single warp mesh."""
+        import numpy as np
+        import omni.usd
+        import warp as wp
+        from pxr import UsdGeom
+
+        from isaaclab.sim import get_all_matching_child_prims
+        from isaaclab.utils.warp import convert_to_warp_mesh
+
+        terrain_prim_path = self._env.scene.terrain.cfg.prim_path
+        mesh_prims = get_all_matching_child_prims(
+            terrain_prim_path, lambda prim: prim.GetTypeName() == "Mesh"
+        )
+        if not mesh_prims:
+            return None
+
+        all_points, all_indices, vertex_offset = [], [], 0
+        for prim in mesh_prims:
+            mesh = UsdGeom.Mesh(prim)
+            pts = mesh.GetPointsAttr().Get()
+            idx = mesh.GetFaceVertexIndicesAttr().Get()
+            if pts is None or idx is None:
+                continue
+            pts = np.asarray(pts, dtype=np.float32)
+            idx = np.asarray(idx, dtype=np.int32)
+            T = np.array(omni.usd.get_world_transform_matrix(mesh), dtype=np.float32).T
+            pts = pts @ T[:3, :3].T + T[:3, 3]
+            all_points.append(pts)
+            all_indices.append(idx + vertex_offset)
+            vertex_offset += len(pts)
+
+        if not all_points:
+            return None
+
+        return convert_to_warp_mesh(
+            np.concatenate(all_points, axis=0),
+            np.concatenate(all_indices, axis=0),
+            device=self.device,
+        )
+
+    def _query_terrain_height(self, xy_w: torch.Tensor, env_ids: torch.Tensor) -> torch.Tensor:
+        """Raycast straight down against the terrain mesh and return ground Z.
+
+        Args:
+            xy_w: World XY positions of the queried envs. Shape (N, 2).
+            env_ids: Env indices corresponding to rows of xy_w.
+
+        Returns:
+            Ground height per env in env_ids. Shape (N,). Missed rays keep
+            the previously cached value.
+        """
+        from isaaclab.utils.warp import raycast_mesh
+
+        if self._terrain_wp_mesh is None:
+            self._terrain_wp_mesh = self._build_terrain_warp_mesh()
+
+        n = xy_w.shape[0]
+        # Cast from well above the robot downward
+        ray_starts = torch.zeros((n, 3), device=self.device)
+        ray_starts[:, :2] = xy_w
+        ray_starts[:, 2] = 0.5
+        ray_dirs = torch.zeros((n, 3), device=self.device)
+        ray_dirs[:, 2] = -1.0
+
+        ray_hits = raycast_mesh(ray_starts, ray_dirs, self._terrain_wp_mesh, max_dist=1.0)[0]
+        hit_z = ray_hits[:, 2]  # inf on miss
+
+        valid = torch.isfinite(hit_z)
+        self._terrain_height_cache[env_ids[valid]] = hit_z[valid]
+        return self._terrain_height_cache[env_ids]
 
     @property
     def action_dim(self) -> int:
@@ -136,7 +212,8 @@ class FloatingBaseVelocityAction(ActionTerm):
         root_state = self._robot.data.root_state_w[env_ids].clone()
 
         ext_force_w = torch.zeros_like(robot_velocity_w[:, :3])
-        ext_force_w[:, 2] = self.z_kp * (self.fixed_z_pose - root_state[:, 2])  # TODO: combine terrain height.
+        terrain_height = self._query_terrain_height(root_state[:, :2], env_ids)
+        ext_force_w[:, 2] = self.z_kp * (terrain_height + self.offset_z_pos - root_state[:, 2])
         ext_force_w[:, 2] -= self.z_kd * robot_velocity_w[:, 2]
 
         ext_force_b = quat_apply_inverse(robot_quat_w, ext_force_w)  # [N, 3]

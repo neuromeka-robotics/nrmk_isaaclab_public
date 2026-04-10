@@ -60,7 +60,8 @@ class NamySceneCfg(InteractiveSceneCfg):
         prim_path="/World/ground",
         terrain_type="usd",
         # usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/../../assets/scene/hm3d_1/usd/hm3d_1.usd",   # Example 1: HM3D dataset
-        usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/../../assets/scene/hm3d_2/usd/hm3d_2.usd",   # Example 2: HM3D dataset
+        # usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/../../assets/scene/hm3d_2/usd/hm3d_2.usd",   # Example 2: HM3D dataset
+        usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/../../assets/scene/nrmk_2nd_floor/usd/nrmk_2nd_floor.usd",   # Example 3: Manually scanned scene
         env_spacing=5.0,
     )
     ##############################
@@ -130,6 +131,7 @@ class ActionsCfg:
         asset_name="robot",
         velocity_scale=1.0,
         yaw_rate_scale=1.0,
+        offset_z_pos=0.05
     )
 
 
@@ -173,7 +175,7 @@ class NamyDeployEnvCfg(NrmkRLEnvCfg):
         self.episode_length_s = 1000.0
 
         # viewer settings
-        self.viewer.origin_type = "asset_root"
+        self.viewer.origin_type = "asset_root"  # set to "world" for global view
         self.viewer.asset_name = "robot"
         
         # back view

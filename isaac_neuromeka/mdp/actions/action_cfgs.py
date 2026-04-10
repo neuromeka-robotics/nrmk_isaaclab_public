@@ -74,7 +74,7 @@ class FloatingBaseVelocityActionCfg(ActionTermCfg):
 
     front_idx: int = 0  # x axis facing front
 
-    fixed_z_pos: float = 0.05
+    offset_z_pos: float = 0.  # constant offset in z axis (e.g., wheel bottom to base_link offset)
 
     # For PD controller to fix roll, pitch angles
     angle_kp: float = 2500.0
