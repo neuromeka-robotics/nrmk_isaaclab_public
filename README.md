@@ -31,7 +31,7 @@ cd nrmk_isaaclab_public
 pip install -e .
 ```
 
-## Usage Examples
+## Usage Examples ([Demo video](https://youtu.be/EHRZnBG3YPo))
 Run simulator
 ```
 python deploy/run_nami_sim.py
