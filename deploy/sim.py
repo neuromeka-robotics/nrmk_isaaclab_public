@@ -17,6 +17,7 @@ for _path in (str(_REPO_ROOT), str(_DEPLOY_DIR)):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
+
 from isaaclab.app import AppLauncher
 from ruamel.yaml import YAML
 
@@ -168,9 +169,9 @@ def main() -> None:
     import isaaclab_tasks  # noqa: F401
     import torch
     from isaaclab_tasks.utils import parse_env_cfg
+    from zenoh_bus import ZenohBus
 
     import isaac_neuromeka.tasks.demo  # noqa: F401
-    from deploy.zenoh_bus import ZenohBus
     from isaac_neuromeka.env.vecenv_wrapper import NrmkRlVecEnvWrapper
 
     logger.info("Runtime dependencies imported.")
