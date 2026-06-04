@@ -1,0 +1,19 @@
+isaaclab_task: "Zen-Deploy"
+
+communication:
+  topic_namespace: "zen_sim"
+  zenoh: null
+
+commands:
+  - topic: "base_command"
+    dtype: "float32"
+    action_slice: [0, 2]
+  - topic: "body_command"
+    dtype: "float32"
+    action_slice: [2, 7]
+  - topic: "arm_command"
+    dtype: "float32"
+    action_slice: [7, 19]
+
+observations:
+  root: "obs"

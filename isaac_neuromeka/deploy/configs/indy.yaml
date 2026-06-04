@@ -1,0 +1,13 @@
+isaaclab_task: "Indy-Deploy"
+
+communication:
+  topic_namespace: "indy_sim"
+  zenoh: null
+
+commands:
+  - topic: "joint_command"
+    dtype: "float32"
+    action_slice: [0, 6]
+
+observations:
+  root: "obs"

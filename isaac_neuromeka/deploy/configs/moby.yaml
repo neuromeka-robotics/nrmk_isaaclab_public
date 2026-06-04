@@ -1,0 +1,13 @@
+isaaclab_task: "Moby-Deploy"
+
+communication:
+  topic_namespace: "moby_sim"
+  zenoh: null
+
+commands:
+  - topic: "action_command"
+    dtype: "float32"
+    action_slice: [0, 2]
+
+observations:
+  root: "obs"
