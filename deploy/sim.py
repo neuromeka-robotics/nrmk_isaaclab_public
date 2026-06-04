@@ -216,39 +216,38 @@ def main() -> None:
         logger=logger,
     )
 
-    try:
-        logger.info("Starting simulation loop...")
-        if not simulation_app.is_running():
-            logger.warning("Isaac Sim app is not running before the first simulation step.")
-        while simulation_app.is_running():
-            with torch.inference_mode():
-                start = time.time()
-                with action_lock:
-                    action_np = latest_action.copy()
-                action = torch.as_tensor(action_np, device=env.device, dtype=torch.float32).view(1, -1)
-                if env.num_envs != 1:
-                    action = action.repeat(env.num_envs, 1)
+    logger.info("Starting simulation loop...")
+    if not simulation_app.is_running():
+        logger.warning("Isaac Sim app is not running before the first simulation step.")
+    while simulation_app.is_running():
+        with torch.inference_mode():
+            start = time.time()
+            with action_lock:
+                action_np = latest_action.copy()
+            action = torch.as_tensor(action_np, device=env.device, dtype=torch.float32).view(1, -1)
+            if env.num_envs != 1:
+                action = action.repeat(env.num_envs, 1)
 
-                _, _, _, infos = env.step(action)
-                observations = infos.get("observations", {})
-                if isinstance(observations, Mapping):
-                    _publish_observations(bus, namespace, obs_root, observations)
+            _, _, _, infos = env.step(action)
+            observations = infos.get("observations", {})
+            if isinstance(observations, Mapping):
+                _publish_observations(bus, namespace, obs_root, observations)
 
-                step_count += 1
+            step_count += 1
 
-                if step_count == 1:
-                    logger.info("First simulation step complete.")
-                if args_cli.max_steps is not None and step_count >= args_cli.max_steps:
-                    break
+            if step_count == 1:
+                logger.info("First simulation step complete.")
+            if args_cli.max_steps is not None and step_count >= args_cli.max_steps:
+                break
 
-                wait_time = env.unwrapped.step_dt - (time.time() - start)
-                if args_cli.real_time and wait_time > 0:
-                    time.sleep(wait_time)
-    finally:
-        logger.info("Simulation loop exited after %d steps.", step_count)
-        bus.close()
-        env.close()
-        simulation_app.close()
+            wait_time = env.unwrapped.step_dt - (time.time() - start)
+            if args_cli.real_time and wait_time > 0:
+                time.sleep(wait_time)
+
+    logger.info("Simulation loop exited after %d steps.", step_count)
+    bus.close()
+    env.close()
+    simulation_app.close()
 
 
 if __name__ == "__main__":
