@@ -8,7 +8,7 @@ This repository contains minimal examples for navigating NAMI in a simulated env
 ## Installation
 ### Prerequisite
 #### 1. IsaacSim, IsaacLab
-Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2.2.1/source/setup/installation/binaries_installation.html) for IsaacSim and IsaacLab installation. 
+Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2.2.1/source/setup/installation/binaries_installation.html) for IsaacSim and IsaacLab installation.
 
 The repository was tested with Isaac Sim **4.5.0** and IsaacLab **v2.2.1**.
 
@@ -34,11 +34,14 @@ pip install -e .
 ## Usage Examples ([Demo video](https://youtu.be/EHRZnBG3YPo))
 Run simulator
 ```
-python deploy/run_nami_sim.py
+python deploy/sim.py --config deploy/configs/nami.yaml --real_time
 ```
-Run keyboard controller and visualizer
+Run keyboard controller
 ```
 python deploy/run_nami_keyboard.py
+```
+Run keyboard controller with sensor visualizer
+```
 python deploy/run_nami_keyboard.py --debug_vis  # To visualize image and pointcloud data
 ```
 
@@ -52,7 +55,8 @@ python deploy/run_nami_keyboard.py --debug_vis  # To visualize image and pointcl
 Core files to look into are as follows:
 - `isaac_neuromeka/tasks/demo/__init__.py`: Gym environment definition
 - `isaac_neuromeka/tasks/demo/nami_env_cfg.py`: NAMI environment
-- `deploy/run_nami_sim.py`: Running simulator
+- `deploy/sim.py`: Running simulator
+- `deploy/configs/nami.yaml`: NAMI simulator streaming config
 - `deploy/run_nami_keyboard.py`: Running keyboard controller
 
 ## Setting Up VSCode (Optional)

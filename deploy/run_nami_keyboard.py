@@ -32,8 +32,7 @@ import yaml
 from pynput import keyboard
 from pynput.keyboard import Key
 
-# Commnuication
-from deploy.utils.communication import ZenohBus
+from deploy.zenoh_bus import ZenohBus
 
 
 class NamiKeyboardController:
@@ -105,15 +104,16 @@ def main() -> None:
 
     # Load the configuration file
     parent_path = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(parent_path, "config", "nami_sim.yaml")
+    yaml_path = os.path.join(parent_path, "configs", "nami.yaml")
     with open(yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
     # Set communication
     topic_namespace = config["communication"].get("topic_namespace", "nami_sim")
+    obs_root = config.get("observations", {}).get("root", "obs")
     command_topic = f"{topic_namespace}/action_command"
-    image_topic = f"{topic_namespace}/obs/image"
-    depth_topic = f"{topic_namespace}/obs/depth_image"
+    image_topic = f"{topic_namespace}/{obs_root}/policy/image"
+    depth_topic = f"{topic_namespace}/{obs_root}/policy/depth_image"
     zenoh_bus = ZenohBus()
 
     # Set extra configration (camera parameters, robot command parameters, etc.)

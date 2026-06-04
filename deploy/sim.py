@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import sys
 import threading
 import time
 from collections.abc import Mapping
@@ -9,6 +10,13 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+_DEPLOY_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _DEPLOY_DIR.parent
+for _path in (str(_REPO_ROOT), str(_DEPLOY_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
 from isaaclab.app import AppLauncher
 from ruamel.yaml import YAML
 
@@ -161,8 +169,8 @@ def main() -> None:
     import torch
     from isaaclab_tasks.utils import parse_env_cfg
 
-    import isaac_neuromeka.tasks  # noqa: F401
-    from isaac_neuromeka.deploy.zenoh_bus import ZenohBus
+    import isaac_neuromeka.tasks.demo  # noqa: F401
+    from deploy.zenoh_bus import ZenohBus
     from isaac_neuromeka.env.vecenv_wrapper import NrmkRlVecEnvWrapper
 
     logger.info("Runtime dependencies imported.")
