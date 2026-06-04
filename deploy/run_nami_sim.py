@@ -9,7 +9,7 @@ Pre-requisites:
     - Follow the README
 - Install zenoh
         pip install eclipse-zenoh
-        
+
 How to use:
     python deploy/run_nami_sim.py
 """
@@ -17,6 +17,15 @@ How to use:
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
+
+_DEPLOY_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _DEPLOY_DIR.parent
+for _path in (str(_REPO_ROOT), str(_DEPLOY_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
 from isaaclab.app import AppLauncher
 
 # Add argparse arguments
@@ -32,17 +41,18 @@ simulation_app = app_launcher.app
 # Other imports
 import os
 import time
-import yaml
+
+import gymnasium as gym
 import numpy as np
 import torch
-import gymnasium as gym
-
-# Communication
-from deploy.utils.communication import ZenohBus
+import yaml
+from env_wrapper.env_wrapper_base import EnvWrapper
 
 # EnvWrapper
 from isaaclab_tasks.utils import parse_env_cfg
-from env_wrapper.env_wrapper_base import EnvWrapper
+
+# Communication
+from deploy.utils.communication import ZenohBus
 
 
 def main():

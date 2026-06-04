@@ -16,11 +16,19 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
+import time
+from pathlib import Path
 from threading import Lock
+
+_DEPLOY_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _DEPLOY_DIR.parent
+for _path in (str(_REPO_ROOT), str(_DEPLOY_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 
 import numpy as np
 import yaml
-import time
 from pynput import keyboard
 from pynput.keyboard import Key
 
@@ -39,7 +47,7 @@ class NamiKeyboardController:
         self._running = True
         self._listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
         self._listener.start()
-        
+
     def close(self) -> None:
         with self._lock:
             self._running = False
@@ -66,7 +74,7 @@ class NamiKeyboardController:
             yaw = -self.yaw_speed
 
         return np.array([forward, yaw], dtype=np.float32)
-    
+
     def _normalize_key(self, key: object) -> object:
         if isinstance(key, keyboard.KeyCode) and key.char is not None:
             return key.char.lower()
@@ -90,9 +98,11 @@ class NamiKeyboardController:
 def main() -> None:
     # Add argparse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--debug_vis", action="store_true", default=False, help="Visualize camera images and point cloud for debugging.")
+    parser.add_argument(
+        "--debug_vis", action="store_true", default=False, help="Visualize camera images and point cloud for debugging."
+    )
     args = parser.parse_args()
-    
+
     # Load the configuration file
     parent_path = os.path.dirname(os.path.abspath(__file__))
     yaml_path = os.path.join(parent_path, "config", "nami_sim.yaml")
@@ -105,35 +115,27 @@ def main() -> None:
     image_topic = f"{topic_namespace}/obs/image"
     depth_topic = f"{topic_namespace}/obs/depth_image"
     zenoh_bus = ZenohBus()
-    
+
     # Set extra configration (camera parameters, robot command parameters, etc.)
     # Currently, the camera configuration is matched to realsense D435.
     CAMERA_CONFIG = {
         "width": 640,
         "height": 480,
-        "intrinsics": {
-            "fx": 604.8516,
-            "fy": 604.3739,
-            "cx": 321.95575,
-            "cy": 238.7731
-        },
+        "intrinsics": {"fx": 604.8516, "fy": 604.3739, "cx": 321.95575, "cy": 238.7731},
         "clipping_range": (0.1, 10.0),
-        "pcl_subsample_stride": 4
+        "pcl_subsample_stride": 4,
     }
-    ROBOT_CMD_CONFIG = {
-        "forward": 1,
-        "yaw": 1
-    }
-    
+    ROBOT_CMD_CONFIG = {"forward": 1, "yaw": 1}
+
     # Set controller that outputs action command
     # Currently, keyboard is used. (Arrows for +forward/-forward/+yaw/-yaw, Esc for quit)
     # In future, neural network or other fancy algorithms can be used.
-    controller = NamiKeyboardController(
-        linear_speed=ROBOT_CMD_CONFIG["forward"], yaw_speed=ROBOT_CMD_CONFIG["yaw"])
-    
+    controller = NamiKeyboardController(linear_speed=ROBOT_CMD_CONFIG["forward"], yaw_speed=ROBOT_CMD_CONFIG["yaw"])
+
     # Set visualizer for debugging
     if args.debug_vis:
         from deploy.utils.data import SensorVisualizer
+
         visualizer = SensorVisualizer(**CAMERA_CONFIG)
         zenoh_bus.subscribe(image_topic, lambda key, payload: visualizer.update_image(payload))
         zenoh_bus.subscribe(depth_topic, lambda key, payload: visualizer.update_depth(payload))
@@ -143,7 +145,7 @@ def main() -> None:
             # Get command and publish
             command = controller.get_command()
             zenoh_bus.publish(command_topic, command.tobytes())
-            
+
             # Visualize sensor data for debugging
             if args.debug_vis:
                 visualizer.draw()
