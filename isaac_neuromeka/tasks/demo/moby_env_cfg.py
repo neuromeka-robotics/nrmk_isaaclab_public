@@ -56,7 +56,7 @@ from isaac_neuromeka.utils.etc import EmptyCfg
 class MobySceneCfg(InteractiveSceneCfg):
 
     # world
-    ground = AssetBaseCfg(
+    terrain = AssetBaseCfg(
         prim_path="/World/ground",
         spawn=sim_utils.GroundPlaneCfg(),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)),
