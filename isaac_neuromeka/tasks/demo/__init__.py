@@ -30,11 +30,11 @@ gym.register(
 )
 
 gym.register(
-    id="Nami-Deploy",
+    id="Nami-Nav-Deploy",
     entry_point="isaac_neuromeka.env.tracking_viewer_env:TrackingViewerEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": nami_env_cfg.NamiDeployEnvCfg,
+        "env_cfg_entry_point": nami_env_cfg.NamiNavDeployEnvCfg,
         "rsl_rl_cfg_entry_point": f"{learning.__name__}.rsl_rl_cfg:ReachPPORunnerCfg",
         "nrmk_rl_cfg_entry_point": f"{learning.__name__}.nrmk_rl_cfg:ReachPPORunnerCfg",
     },

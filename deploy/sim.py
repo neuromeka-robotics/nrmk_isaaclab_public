@@ -19,7 +19,10 @@ for _path in (str(_REPO_ROOT), str(_DEPLOY_DIR)):
 
 
 from isaaclab.app import AppLauncher
-from ruamel.yaml import YAML
+
+from deploy.config import command_configs
+from deploy.config import key as topic_key
+from deploy.config import load_config, mapping_section, optional_int, parse_action_slice
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -27,8 +30,6 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Run a generic Neuromeka IsaacLab deploy simulator. The Isaac Sim visualizer is enabled by default."
     )
     parser.add_argument("--config", type=str, required=True, help="Path to an explicit deploy YAML config.")
-    parser.add_argument("--real_time", action="store_true", default=False, help="Sleep to match the env control rate.")
-    parser.add_argument("--max_steps", type=int, default=None, help="Stop after this many environment steps.")
     AppLauncher.add_app_launcher_args(parser)
     _ensure_headless_flag(parser)
     parser.set_defaults(enable_cameras=True)
@@ -43,47 +44,10 @@ def _ensure_headless_flag(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(headless=False)
 
 
-def _load_yaml(path: Path) -> dict[str, Any]:
-    yaml = YAML(typ="safe")
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.load(f)
-    if not isinstance(data, dict):
-        raise ValueError(f"Deploy config must be a mapping: {path}")
-    return data
-
-
-def _load_config(args_cli: argparse.Namespace) -> tuple[dict[str, Any], Path]:
-    path = Path(args_cli.config).expanduser().resolve()
-    return _load_yaml(path), path
-
-
-def _key(*parts: str) -> str:
-    return "/".join(str(part).strip("/") for part in parts if str(part).strip("/"))
-
-
 def _dtype_from_name(name: str) -> np.dtype:
     if name != "float32":
         raise ValueError(f"Unsupported command dtype {name!r}; only 'float32' is supported.")
     return np.dtype(np.float32)
-
-
-def _parse_action_slice(raw_slice: Any, action_dim: int) -> tuple[int, int]:
-    if not isinstance(raw_slice, (list, tuple)) or len(raw_slice) != 2:
-        raise ValueError(f"action_slice must be [start, end], got {raw_slice!r}")
-    start, end = int(raw_slice[0]), int(raw_slice[1])
-    if start < 0 or end <= start or end > action_dim:
-        raise ValueError(f"Invalid action_slice [{start}, {end}] for action dim {action_dim}")
-    return start, end
-
-
-def _command_configs(config: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    commands = config.get("commands", [])
-    if not isinstance(commands, list) or not commands:
-        raise ValueError("Deploy config must define a non-empty commands list.")
-    for command in commands:
-        if not isinstance(command, Mapping):
-            raise ValueError(f"Command entries must be mappings, got {type(command)}")
-    return commands
 
 
 def _subscribe_commands(
@@ -100,9 +64,9 @@ def _subscribe_commands(
     for command in commands:
         topic = str(command["topic"])
         dtype = _dtype_from_name(str(command.get("dtype", "float32")))
-        start, end = _parse_action_slice(command["action_slice"], action_dim)
+        start, end = parse_action_slice(command["action_slice"], action_dim)
         command_len = end - start
-        key_expr = _key(namespace, topic)
+        key_expr = topic_key(namespace, topic)
 
         def _handler(
             key: str,
@@ -141,12 +105,12 @@ def _publish_observation_value(bus: Any, key: str, value: Any) -> None:
         return
     if isinstance(value, Mapping):
         for child_key, child_value in value.items():
-            _publish_observation_value(bus, _key(key, str(child_key)), child_value)
+            _publish_observation_value(bus, topic_key(key, str(child_key)), child_value)
 
 
 def _publish_observations(bus: Any, namespace: str, root: str, observations: Mapping[str, Any]) -> None:
     for group_name, value in observations.items():
-        _publish_observation_value(bus, _key(namespace, root, str(group_name)), value)
+        _publish_observation_value(bus, topic_key(namespace, root, str(group_name)), value)
 
 
 def main() -> None:
@@ -156,8 +120,11 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
     logger = logging.getLogger("deploy.sim")
 
-    config, config_path = _load_config(args_cli)
+    config, config_path = load_config(args_cli.config)
     logger.info("Loaded deploy config: %s", config_path)
+    simulation_cfg = mapping_section(config, "simulation")
+    real_time = bool(simulation_cfg.get("real_time", False))
+    max_steps = optional_int(simulation_cfg.get("max_steps"))
 
     logger.info("Launching Isaac Sim app...")
     app_launcher = AppLauncher(args_cli)
@@ -169,17 +136,15 @@ def main() -> None:
     import isaaclab_tasks  # noqa: F401
     import torch
     from isaaclab_tasks.utils import parse_env_cfg
-    from zenoh_bus import ZenohBus
 
     import isaac_neuromeka.tasks.demo  # noqa: F401
+    from deploy.zenoh_bus import ZenohBus
     from isaac_neuromeka.env.vecenv_wrapper import NrmkRlVecEnvWrapper
 
     logger.info("Runtime dependencies imported.")
 
     task = str(config["isaaclab_task"])
-    communication = config.get("communication", {})
-    if not isinstance(communication, Mapping):
-        raise ValueError("communication must be a mapping.")
+    communication = mapping_section(config, "communication")
     namespace = str(communication.get("topic_namespace", task))
     zenoh_config = communication.get("zenoh")
 
@@ -198,10 +163,8 @@ def main() -> None:
 
     latest_action = np.zeros(env.num_actions, dtype=np.float32)
     action_lock = threading.Lock()
-    observations_cfg = config.get("observations", {})
-    obs_root = "obs"
-    if isinstance(observations_cfg, Mapping):
-        obs_root = str(observations_cfg.get("root", obs_root))
+    observations_cfg = mapping_section(config, "observations")
+    obs_root = str(observations_cfg.get("root", "obs"))
 
     step_count = 0
     logger.info("Opening Zenoh bus...")
@@ -210,44 +173,45 @@ def main() -> None:
     _subscribe_commands(
         bus=bus,
         namespace=namespace,
-        commands=_command_configs(config),
+        commands=command_configs(config),
         latest_action=latest_action,
         action_lock=action_lock,
         logger=logger,
     )
 
     logger.info("Starting simulation loop...")
-    if not simulation_app.is_running():
-        logger.warning("Isaac Sim app is not running before the first simulation step.")
-    while simulation_app.is_running():
-        with torch.inference_mode():
-            start = time.time()
-            with action_lock:
-                action_np = latest_action.copy()
-            action = torch.as_tensor(action_np, device=env.device, dtype=torch.float32).view(1, -1)
-            if env.num_envs != 1:
-                action = action.repeat(env.num_envs, 1)
+    try:
+        if not simulation_app.is_running():
+            logger.warning("Isaac Sim app is not running before the first simulation step.")
+        while simulation_app.is_running():
+            with torch.inference_mode():
+                start = time.time()
+                with action_lock:
+                    action_np = latest_action.copy()
+                action = torch.as_tensor(action_np, device=env.device, dtype=torch.float32).view(1, -1)
+                if env.num_envs != 1:
+                    action = action.repeat(env.num_envs, 1)
 
-            _, _, _, infos = env.step(action)
-            observations = infos.get("observations", {})
-            if isinstance(observations, Mapping):
-                _publish_observations(bus, namespace, obs_root, observations)
+                _, _, _, infos = env.step(action)
+                observations = infos.get("observations", {})
+                if isinstance(observations, Mapping):
+                    _publish_observations(bus, namespace, obs_root, observations)
 
-            step_count += 1
+                step_count += 1
 
-            if step_count == 1:
-                logger.info("First simulation step complete.")
-            if args_cli.max_steps is not None and step_count >= args_cli.max_steps:
-                break
+                if step_count == 1:
+                    logger.info("First simulation step complete.")
+                if max_steps is not None and step_count >= max_steps:
+                    break
 
-            wait_time = env.unwrapped.step_dt - (time.time() - start)
-            if args_cli.real_time and wait_time > 0:
-                time.sleep(wait_time)
-
-    logger.info("Simulation loop exited after %d steps.", step_count)
-    bus.close()
-    env.close()
-    simulation_app.close()
+                wait_time = env.unwrapped.step_dt - (time.time() - start)
+                if real_time and wait_time > 0:
+                    time.sleep(wait_time)
+    finally:
+        logger.info("Simulation loop exited after %d steps.", step_count)
+        bus.close()
+        env.close()
+        simulation_app.close()
 
 
 if __name__ == "__main__":

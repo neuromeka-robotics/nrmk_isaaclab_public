@@ -4,6 +4,10 @@ communication:
   topic_namespace: "indy_sim"
   zenoh: null
 
+simulation:
+  real_time: true
+  max_steps: null
+
 commands:
   - topic: "joint_command"
     dtype: "float32"

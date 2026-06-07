@@ -4,6 +4,10 @@ communication:
   topic_namespace: "zen_sim"
   zenoh: null
 
+simulation:
+  real_time: true
+  max_steps: null
+
 commands:
   - topic: "base_command"
     dtype: "float32"
@@ -17,3 +21,9 @@ commands:
 
 observations:
   root: "obs"
+
+keyboard:
+  command_topic: "base_command"
+  linear_speed: 1.0
+  yaw_speed: 1.0
+  debug_vis: false

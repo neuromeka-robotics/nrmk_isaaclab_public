@@ -57,7 +57,7 @@ class FloatingBaseVelocityAction(ActionTerm):
         self.max_front_velocity = self.cfg.max_front_velocity
         self.max_yaw_rate = self.cfg.max_yaw_rate
 
-        self.offset_z_pos = self.cfg.offset_z_pos
+        self.fixed_z_pose = self.cfg.fixed_z_pos
 
         self.z_kp = self.cfg.z_kp
         self.angle_kp = self.cfg.angle_kp
@@ -70,82 +70,6 @@ class FloatingBaseVelocityAction(ActionTerm):
 
         self.yaw_kp = self.cfg.yaw_kp
         self.yaw_kd = self.cfg.yaw_kd
-
-        # Terrain height raycasting state (built lazily, cached per env)
-        self._terrain_wp_mesh = None  # warp mesh built on first call
-        self._terrain_height_cache = torch.zeros(env.num_envs, device=env.device)
-
-    def _build_terrain_warp_mesh(self):
-        """Merge all Mesh prims under the terrain prim into a single warp mesh."""
-        import numpy as np
-        import omni.usd
-        import warp as wp
-        from pxr import UsdGeom
-
-        from isaaclab.sim import get_all_matching_child_prims
-        from isaaclab.utils.warp import convert_to_warp_mesh
-
-        terrain_prim_path = self._env.scene.terrain.cfg.prim_path
-        mesh_prims = get_all_matching_child_prims(
-            terrain_prim_path, lambda prim: prim.GetTypeName() == "Mesh"
-        )
-        if not mesh_prims:
-            return None
-
-        all_points, all_indices, vertex_offset = [], [], 0
-        for prim in mesh_prims:
-            mesh = UsdGeom.Mesh(prim)
-            pts = mesh.GetPointsAttr().Get()
-            idx = mesh.GetFaceVertexIndicesAttr().Get()
-            if pts is None or idx is None:
-                continue
-            pts = np.asarray(pts, dtype=np.float32)
-            idx = np.asarray(idx, dtype=np.int32)
-            T = np.array(omni.usd.get_world_transform_matrix(mesh), dtype=np.float32).T
-            pts = pts @ T[:3, :3].T + T[:3, 3]
-            all_points.append(pts)
-            all_indices.append(idx + vertex_offset)
-            vertex_offset += len(pts)
-
-        if not all_points:
-            return None
-
-        return convert_to_warp_mesh(
-            np.concatenate(all_points, axis=0),
-            np.concatenate(all_indices, axis=0),
-            device=self.device,
-        )
-
-    def _query_terrain_height(self, xy_w: torch.Tensor, env_ids: torch.Tensor) -> torch.Tensor:
-        """Raycast straight down against the terrain mesh and return ground Z.
-
-        Args:
-            xy_w: World XY positions of the queried envs. Shape (N, 2).
-            env_ids: Env indices corresponding to rows of xy_w.
-
-        Returns:
-            Ground height per env in env_ids. Shape (N,). Missed rays keep
-            the previously cached value.
-        """
-        from isaaclab.utils.warp import raycast_mesh
-
-        if self._terrain_wp_mesh is None:
-            self._terrain_wp_mesh = self._build_terrain_warp_mesh()
-
-        n = xy_w.shape[0]
-        # Cast from well above the robot downward
-        ray_starts = torch.zeros((n, 3), device=self.device)
-        ray_starts[:, :2] = xy_w
-        ray_starts[:, 2] = 0.5
-        ray_dirs = torch.zeros((n, 3), device=self.device)
-        ray_dirs[:, 2] = -1.0
-
-        ray_hits = raycast_mesh(ray_starts, ray_dirs, self._terrain_wp_mesh, max_dist=1.0)[0]
-        hit_z = ray_hits[:, 2]  # inf on miss
-
-        valid = torch.isfinite(hit_z)
-        self._terrain_height_cache[env_ids[valid]] = hit_z[valid]
-        return self._terrain_height_cache[env_ids]
 
     @property
     def action_dim(self) -> int:
@@ -165,7 +89,15 @@ class FloatingBaseVelocityAction(ActionTerm):
             [self.desired_velocity[:, self.front_idx].unsqueeze(1), self.desired_velocity[:, 5].unsqueeze(1)], dim=-1
         )
 
-    def reset(self, env_ids: Sequence[int] | None = None) -> None:
+    def _resolve_env_ids(self, env_ids: Sequence[int] | torch.Tensor | None) -> torch.Tensor:
+        if env_ids is None:
+            return torch.arange(self.num_envs, device=self.device)
+        if isinstance(env_ids, torch.Tensor):
+            return env_ids.to(device=self.device, dtype=torch.long)
+        return torch.as_tensor(env_ids, device=self.device, dtype=torch.long)
+
+    def reset(self, env_ids: Sequence[int] | torch.Tensor | None = None) -> None:
+        env_ids = self._resolve_env_ids(env_ids)
         self.prev_desired_velocity[env_ids] = 0.0
         self.desired_velocity[env_ids] = 0.0
 
@@ -187,10 +119,15 @@ class FloatingBaseVelocityAction(ActionTerm):
         self.desired_velocity[:, self.front_idx] = target_front_vel
         self.desired_velocity[:, 5] = target_yaw_rate
 
+    def _compute_target_z(self, root_state: torch.Tensor, env_ids: torch.Tensor) -> torch.Tensor:
+        return torch.full_like(root_state[:, 2], self.fixed_z_pose)
+
+    def _get_joint_position_target(self, env_ids: torch.Tensor) -> torch.Tensor:
+        return torch.zeros_like(self._robot._data.joint_pos_target[env_ids])
+
     # Runs at physics dt
-    def apply_actions(self, env_ids: Sequence[int] | None = None):
-        if env_ids is None:
-            env_ids = torch.arange(self.num_envs, device=self.device)
+    def apply_actions(self, env_ids: Sequence[int] | torch.Tensor | None = None):
+        env_ids = self._resolve_env_ids(env_ids)
         # # Robot_state
         robot_velocity_w = self._robot._finite_body_vel_w[env_ids, 0]  # shape (N, 6)
 
@@ -212,8 +149,8 @@ class FloatingBaseVelocityAction(ActionTerm):
         root_state = self._robot.data.root_state_w[env_ids].clone()
 
         ext_force_w = torch.zeros_like(robot_velocity_w[:, :3])
-        terrain_height = self._query_terrain_height(root_state[:, :2], env_ids)
-        ext_force_w[:, 2] = self.z_kp * (terrain_height + self.offset_z_pos - root_state[:, 2])
+        target_z = self._compute_target_z(root_state, env_ids)
+        ext_force_w[:, 2] = self.z_kp * (target_z - root_state[:, 2])
         ext_force_w[:, 2] -= self.z_kd * robot_velocity_w[:, 2]
 
         ext_force_b = quat_apply_inverse(robot_quat_w, ext_force_w)  # [N, 3]
@@ -237,9 +174,7 @@ class FloatingBaseVelocityAction(ActionTerm):
             ext_force_b.unsqueeze(1), ext_torque_b.unsqueeze(1), body_ids=[0], env_ids=env_ids, is_global=False
         )
 
-        self._robot.set_joint_position_target(
-            self._robot._data.default_joint_pos[env_ids], env_ids=env_ids
-        )
+        self._robot.set_joint_position_target(self._get_joint_position_target(env_ids), env_ids=env_ids)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         if debug_vis:
@@ -283,3 +218,82 @@ class FloatingBaseVelocityAction(ActionTerm):
         scale[:, 0] = torch.clamp(torch.norm(target_velocity_w, dim=1, keepdim=False), min=0.1, max=2.0)
 
         self.target_vel_visualizer.visualize(arrow_base_pos, arrow_quat, scale)
+
+
+class TerrainFloatingBaseVelocityAction(FloatingBaseVelocityAction):
+    """Floating-base velocity action that holds height relative to mesh terrain."""
+
+    def __init__(self, cfg, env):
+        super().__init__(cfg, env)
+        self.offset_z_pos = self.cfg.offset_z_pos
+
+        # Terrain height raycasting state (built lazily, cached per env).
+        self._terrain_wp_mesh = None
+        self._terrain_height_cache = torch.zeros(env.num_envs, device=env.device)
+
+    def _build_terrain_warp_mesh(self):
+        """Merge all Mesh prims under the terrain prim into a single warp mesh."""
+        import numpy as np
+        import omni.usd
+        from isaaclab.sim import get_all_matching_child_prims
+        from isaaclab.utils.warp import convert_to_warp_mesh
+        from pxr import UsdGeom
+
+        terrain_prim_path = self._env.scene.terrain.cfg.prim_path
+        mesh_prims = get_all_matching_child_prims(terrain_prim_path, lambda prim: prim.GetTypeName() == "Mesh")
+        if not mesh_prims:
+            return None
+
+        all_points, all_indices, vertex_offset = [], [], 0
+        for prim in mesh_prims:
+            mesh = UsdGeom.Mesh(prim)
+            pts = mesh.GetPointsAttr().Get()
+            idx = mesh.GetFaceVertexIndicesAttr().Get()
+            if pts is None or idx is None:
+                continue
+            pts = np.asarray(pts, dtype=np.float32)
+            idx = np.asarray(idx, dtype=np.int32)
+            transform_w = np.array(omni.usd.get_world_transform_matrix(mesh), dtype=np.float32).T
+            pts = pts @ transform_w[:3, :3].T + transform_w[:3, 3]
+            all_points.append(pts)
+            all_indices.append(idx + vertex_offset)
+            vertex_offset += len(pts)
+
+        if not all_points:
+            return None
+
+        return convert_to_warp_mesh(
+            np.concatenate(all_points, axis=0),
+            np.concatenate(all_indices, axis=0),
+            device=self.device,
+        )
+
+    def _query_terrain_height(self, xy_w: torch.Tensor, env_ids: torch.Tensor) -> torch.Tensor:
+        """Raycast straight down against the terrain mesh and return ground Z."""
+        from isaaclab.utils.warp import raycast_mesh
+
+        if self._terrain_wp_mesh is None:
+            self._terrain_wp_mesh = self._build_terrain_warp_mesh()
+            if self._terrain_wp_mesh is None:
+                return self._terrain_height_cache[env_ids]
+
+        n = xy_w.shape[0]
+        ray_starts = torch.zeros((n, 3), device=self.device)
+        ray_starts[:, :2] = xy_w
+        ray_starts[:, 2] = 0.5
+        ray_dirs = torch.zeros((n, 3), device=self.device)
+        ray_dirs[:, 2] = -1.0
+
+        ray_hits = raycast_mesh(ray_starts, ray_dirs, self._terrain_wp_mesh, max_dist=1.0)[0]
+        hit_z = ray_hits[:, 2]
+
+        valid = torch.isfinite(hit_z)
+        self._terrain_height_cache[env_ids[valid]] = hit_z[valid]
+        return self._terrain_height_cache[env_ids]
+
+    def _compute_target_z(self, root_state: torch.Tensor, env_ids: torch.Tensor) -> torch.Tensor:
+        terrain_height = self._query_terrain_height(root_state[:, :2], env_ids)
+        return terrain_height + self.offset_z_pos
+
+    def _get_joint_position_target(self, env_ids: torch.Tensor) -> torch.Tensor:
+        return self._robot._data.default_joint_pos[env_ids]

@@ -7,7 +7,10 @@ from isaaclab.markers.visualization_markers import VisualizationMarkersCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
-from isaac_neuromeka.mdp.actions.base_actions import FloatingBaseVelocityAction
+from isaac_neuromeka.mdp.actions.base_actions import (
+    FloatingBaseVelocityAction,
+    TerrainFloatingBaseVelocityAction,
+)
 from isaac_neuromeka.mdp.actions.joint_actions import (
     ClampedJointPositionAction,
     JointResidualAction,
@@ -57,7 +60,7 @@ class FloatingBaseVelocityActionCfg(ActionTermCfg):
     Use Vx, Wz to control the robot like a floating base.
     """
 
-    class_type = FloatingBaseVelocityAction
+    class_type: type[ActionTerm] = FloatingBaseVelocityAction
     asset_name = "robot"
 
     debug_vis = True
@@ -74,7 +77,7 @@ class FloatingBaseVelocityActionCfg(ActionTermCfg):
 
     front_idx: int = 0  # x axis facing front
 
-    offset_z_pos: float = 0.  # constant offset in z axis (e.g., wheel bottom to base_link offset)
+    fixed_z_pos: float = 0.0
 
     # For PD controller to fix roll, pitch angles
     angle_kp: float = 10000.0
@@ -102,6 +105,17 @@ class FloatingBaseVelocityActionCfg(ActionTermCfg):
             )
         },
     )
+
+
+@configclass
+class TerrainFloatingBaseVelocityActionCfg(FloatingBaseVelocityActionCfg):
+    """
+    Use Vx, Wz to control the robot like a floating base over mesh terrain.
+    """
+
+    class_type: type[ActionTerm] = TerrainFloatingBaseVelocityAction
+
+    offset_z_pos: float = 0.0  # constant offset from terrain height to base height
 
 
 # @configclass

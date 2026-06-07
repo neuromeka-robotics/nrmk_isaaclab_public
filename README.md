@@ -34,19 +34,21 @@ pip install -e .
 ## Usage Examples ([Demo video](https://youtu.be/EHRZnBG3YPo))
 Run simulator
 ```
-python deploy/sim.py --config deploy/configs/nami.yaml --real_time
+python deploy/sim.py --config deploy/configs/nami_nav.yaml
 ```
-Run keyboard controller
+Run keyboard controller for NAMI
 ```
-python deploy/run_nami_keyboard.py
+python deploy/run_nav_keyboard.py
+```
+Run keyboard controller for Moby
+```
+python deploy/run_nav_keyboard.py --config deploy/configs/moby.yaml
 ```
 Run keyboard controller with sensor visualizer
-```
-python deploy/run_nami_keyboard.py --debug_vis  # To visualize image and pointcloud data
-```
+Set `keyboard.debug_vis: true` in the selected deploy config.
 
 ## Custom usecase
-- In `deploy/run_nami_keyboard.py`, replace keyboard command with neural network controller or some other fancy algorithms.
+- In `deploy/run_nav_keyboard.py`, replace keyboard command with neural network controller or some other algorithms.
 - In `isaac_neuromeka/tasks/demo/nami_env_cfg.py`, change navigation scene with other opensource mesh file or manually scanned results. Check `NamiSceneCfg` in the file. Currently, below three scenes are provided.
     - `isaac_neuromeka/assets/scene/hm3d_1`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
     - `isaac_neuromeka/assets/scene/hm3d_2`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
@@ -56,8 +58,8 @@ Core files to look into are as follows:
 - `isaac_neuromeka/tasks/demo/__init__.py`: Gym environment definition
 - `isaac_neuromeka/tasks/demo/nami_env_cfg.py`: NAMI environment
 - `deploy/sim.py`: Running simulator
-- `deploy/configs/nami.yaml`: NAMI simulator streaming config
-- `deploy/run_nami_keyboard.py`: Running keyboard controller
+- `deploy/configs/nami_nav.yaml`: NAMI simulator streaming config
+- `deploy/run_nav_keyboard.py`: Running keyboard controller
 
 ## Setting Up VSCode (Optional)
 

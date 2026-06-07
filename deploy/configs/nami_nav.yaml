@@ -1,7 +1,7 @@
-isaaclab_task: "Moby-Deploy"
+isaaclab_task: "Nami-Nav-Deploy"
 
 communication:
-  topic_namespace: "moby_sim"
+  topic_namespace: "nami_sim"
   zenoh: null
 
 simulation:
@@ -20,4 +20,4 @@ keyboard:
   command_topic: "action_command"
   linear_speed: 1.0
   yaw_speed: 1.0
-  debug_vis: true
+  debug_vis: false

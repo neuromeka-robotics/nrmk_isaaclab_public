@@ -8,18 +8,19 @@ Pre-requisites:
         pip install eclipse-zenoh open3d matplotlib pynput
 
 How to use:
-    python deploy/run_nami_keyboard.py
-    python deploy/run_nami_keyboard.py --debug_vis   # To visualize images and pointcloud
+    python deploy/run_nav_keyboard.py
+    python deploy/run_nav_keyboard.py --config deploy/configs/moby.yaml
 """
 
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 import time
+from collections.abc import Mapping
 from pathlib import Path
 from threading import Lock
+from typing import Any
 
 _DEPLOY_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = _DEPLOY_DIR.parent
@@ -28,14 +29,18 @@ for _path in (str(_REPO_ROOT), str(_DEPLOY_DIR)):
         sys.path.insert(0, _path)
 
 import numpy as np
-import yaml
 from pynput import keyboard
 from pynput.keyboard import Key
 
+from deploy.config import command_configs
+from deploy.config import key as topic_key
+from deploy.config import load_config, mapping_section, parse_action_slice
 from deploy.zenoh_bus import ZenohBus
 
+DEFAULT_CONFIG_PATH = _DEPLOY_DIR / "configs" / "nami_nav.yaml"
 
-class NamiKeyboardController:
+
+class NavKeyboardController:
     """Tracks pressed keys and converts them into a base action command."""
 
     def __init__(self, linear_speed: float, yaw_speed: float) -> None:
@@ -94,29 +99,65 @@ class NamiKeyboardController:
         return None
 
 
+def _select_nav_command(config: Mapping[str, Any]) -> Mapping[str, Any]:
+    commands = command_configs(config)
+    keyboard_cfg = mapping_section(config, "keyboard")
+    requested_topic = keyboard_cfg.get("command_topic")
+    if requested_topic is not None:
+        for command in commands:
+            if str(command.get("topic", "")) == requested_topic:
+                return command
+        raise ValueError(f"No command topic {requested_topic!r} found in deploy config.")
+
+    if len(commands) == 1:
+        return commands[0]
+
+    for command in commands:
+        start, end = parse_action_slice(command.get("action_slice"))
+        if end - start == 2:
+            return command
+
+    raise ValueError("Deploy config has multiple commands; set keyboard.command_topic to the two-value nav command.")
+
+
 def main() -> None:
     # Add argparse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--debug_vis", action="store_true", default=False, help="Visualize camera images and point cloud for debugging."
+        "--config",
+        type=Path,
+        default=DEFAULT_CONFIG_PATH,
+        help="Deploy YAML config. Defaults to deploy/configs/nami_nav.yaml.",
     )
     args = parser.parse_args()
 
     # Load the configuration file
-    parent_path = os.path.dirname(os.path.abspath(__file__))
-    yaml_path = os.path.join(parent_path, "configs", "nami.yaml")
-    with open(yaml_path, "r") as f:
-        config = yaml.safe_load(f)
+    config, _ = load_config(args.config)
+    keyboard_cfg = mapping_section(config, "keyboard")
+    command_cfg = _select_nav_command(config)
+    command_start, command_end = parse_action_slice(command_cfg.get("action_slice"))
+    command_dim = command_end - command_start
+    if command_dim != 2:
+        raise ValueError(
+            f"Keyboard nav controller publishes [forward, yaw], but {command_cfg.get('topic')!r} "
+            f"expects {command_dim} values."
+        )
+    command_dtype = str(command_cfg.get("dtype", "float32"))
+    if command_dtype != "float32":
+        raise ValueError(f"Unsupported command dtype {command_dtype!r}; only 'float32' is supported.")
 
     # Set communication
-    topic_namespace = config["communication"].get("topic_namespace", "nami_sim")
-    obs_root = config.get("observations", {}).get("root", "obs")
-    command_topic = f"{topic_namespace}/action_command"
-    image_topic = f"{topic_namespace}/{obs_root}/policy/image"
-    depth_topic = f"{topic_namespace}/{obs_root}/policy/depth_image"
-    zenoh_bus = ZenohBus()
+    communication = mapping_section(config, "communication")
+    topic_namespace = str(communication.get("topic_namespace", config.get("isaaclab_task", "sim")))
+    zenoh_config = communication.get("zenoh")
+    observations_cfg = mapping_section(config, "observations")
+    obs_root = str(observations_cfg.get("root", "obs"))
+    command_topic = topic_key(topic_namespace, str(command_cfg.get("topic", "action_command")))
+    image_topic = topic_key(topic_namespace, obs_root, "policy", "image")
+    depth_topic = topic_key(topic_namespace, obs_root, "policy", "depth_image")
+    zenoh_bus = ZenohBus(zenoh_config if isinstance(zenoh_config, dict) else None)
 
-    # Set extra configration (camera parameters, robot command parameters, etc.)
+    # Set extra configuration (camera parameters, robot command parameters, etc.)
     # Currently, the camera configuration is matched to realsense D435.
     CAMERA_CONFIG = {
         "width": 640,
@@ -125,15 +166,17 @@ def main() -> None:
         "clipping_range": (0.1, 10.0),
         "pcl_subsample_stride": 4,
     }
-    ROBOT_CMD_CONFIG = {"forward": 1, "yaw": 1}
-
     # Set controller that outputs action command
     # Currently, keyboard is used. (Arrows for +forward/-forward/+yaw/-yaw, Esc for quit)
     # In future, neural network or other fancy algorithms can be used.
-    controller = NamiKeyboardController(linear_speed=ROBOT_CMD_CONFIG["forward"], yaw_speed=ROBOT_CMD_CONFIG["yaw"])
+    controller = NavKeyboardController(
+        linear_speed=float(keyboard_cfg.get("linear_speed", 1.0)),
+        yaw_speed=float(keyboard_cfg.get("yaw_speed", 1.0)),
+    )
 
     # Set visualizer for debugging
-    if args.debug_vis:
+    debug_vis = bool(keyboard_cfg.get("debug_vis", False))
+    if debug_vis:
         from deploy.utils.data import SensorVisualizer
 
         visualizer = SensorVisualizer(**CAMERA_CONFIG)
@@ -147,7 +190,7 @@ def main() -> None:
             zenoh_bus.publish(command_topic, command.tobytes())
 
             # Visualize sensor data for debugging
-            if args.debug_vis:
+            if debug_vis:
                 visualizer.draw()
             else:
                 time.sleep(0.01)
@@ -157,7 +200,7 @@ def main() -> None:
         # Publish one final zero command to stop the robot cleanly.
         zenoh_bus.publish(command_topic, np.zeros(2, dtype=np.float32).tobytes())
         controller.close()
-        if args.debug_vis:
+        if debug_vis:
             visualizer.close()
         zenoh_bus.close()
 
