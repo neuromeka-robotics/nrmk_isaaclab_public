@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
     # from isaac_neuromeka.env.rl_task_custom_env import CustomManagerBasedRLEnv
 
-from isaaclab.sensors import Camera, RayCasterCamera, TiledCamera
+from isaaclab.sensors import Camera, RayCaster, RayCasterCamera, TiledCamera
 
 from isaac_neuromeka.assets.articulation import FiniteArticulation
 
@@ -32,6 +32,41 @@ def position_in_world(
     body_idx = asset.find_bodies(body_name)[0][0]
     body_pos_w = asset.data.body_state_w[:, body_idx, :3]
     return body_pos_w
+
+
+def orientation_in_world(
+    env: ManagerBasedRLEnv, body_name: str, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    asset: FiniteArticulation = env.scene[asset_cfg.name]
+    body_idx = asset.find_bodies(body_name)[0][0]
+    return asset.data.body_state_w[:, body_idx, 3:7]
+
+
+def lidar_pointcloud(
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg,
+    body_name: str = "base_link",
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
+    asset: FiniteArticulation = env.scene[asset_cfg.name]
+    body_idx = asset.find_bodies(body_name)[0][0]
+
+    ray_hits_w = sensor.data.ray_hits_w.clone()
+    valid = torch.isfinite(ray_hits_w).all(dim=-1)
+
+    base_pos_w = asset.data.body_state_w[:, body_idx, :3]
+    base_quat_w = asset.data.body_state_w[:, body_idx, 3:7]
+    ray_hits_from_base_w = ray_hits_w - base_pos_w.unsqueeze(1)
+    ray_hits_from_base_w = torch.where(
+        valid.unsqueeze(-1), ray_hits_from_base_w, torch.zeros_like(ray_hits_from_base_w)
+    )
+
+    num_rays = ray_hits_w.shape[1]
+    base_quat_w = base_quat_w.unsqueeze(1).expand(-1, num_rays, -1).reshape(-1, 4)
+    ray_hits_b = quat_apply_inverse(base_quat_w, ray_hits_from_base_w.reshape(-1, 3)).reshape_as(ray_hits_w)
+
+    return torch.where(valid.unsqueeze(-1), ray_hits_b, torch.full_like(ray_hits_b, float("inf")))
 
 
 def finite_body_vel_b(
@@ -48,6 +83,7 @@ def finite_body_vel_b(
 
     return body_vel_b
 
+
 def joint_pos(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
@@ -55,12 +91,14 @@ def joint_pos(
     asset: FiniteArticulation = env.scene[asset_cfg.name]
     return asset.data.joint_pos[:, asset_cfg.joint_ids]
 
+
 def finite_joint_vel(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     asset: FiniteArticulation = env.scene[asset_cfg.name]
     return asset._finite_joint_vel[:, asset_cfg.joint_ids]
+
 
 def joint_pos_history(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")) -> torch.Tensor:
     asset: FiniteArticulation = env.scene[asset_cfg.name]
