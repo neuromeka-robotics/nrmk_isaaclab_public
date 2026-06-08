@@ -1,46 +1,65 @@
-# Neuromeka-IsaacLab
-
-This is a project template that builds upon [*IsaacLab*](https://github.com/isaac-sim/IsaacLab). Before proceeding, please refer to the installation guides for IsaacLab.
-
-We plan to add new environments and algorithms in future updates.
-
-## Compatibility
-- Tested with Isaac Sim **4.5.0** and IsaacLab **v2.0.1**
+# Neuromeka-IsaacLab (NAMI navigation)
+This repository contains minimal examples for navigating NAMI in a simulated environment. Specifically, it demonstrates:
+- Creating a simulated environment using a scanned scene mesh file
+- Spawning the NAMI robot within the environment
+- Streaming RGB and depth data from the robot’s RGB-D sensor
+- Controlling the NAMI robot using a keyboard
 
 ## Installation
+### Prerequisite
+#### 1. IsaacSim, IsaacLab
+Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2.2.1/source/setup/installation/binaries_installation.html) for IsaacSim and IsaacLab installation.
 
-### **Prerequisite: Install Git LFS**
-Ensure that [Git LFS](https://git-lfs.github.com/) is installed before proceeding.
+The repository was tested with Isaac Sim **4.5.0** and IsaacLab **v2.2.1**.
 
-For detailed installation instructions, follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/binaries_installation.html). Additionally, for installing Isaac Sim, refer to [Isaac Sim Workstation Installation](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_workstation.html).
+For IsaacSim installation, we recommend binary installation rather than pip installation.
 
-### **Installing the Extension**
-Install this repository as a Python package. It will be installed with a symbolic link, ensuring that any modifications in the repository are reflected during execution.
-```bash
-cd neuromeka-isaac
+#### 2. Extra
+After installing IsaacLab, a dedicated conda environment will be created (e.g., `env_isaaclab`).
+Install extra packages.
+```
+conda activate env_isaaclab
+pip install eclipse-zenoh open3d matplotlib pynput
+```
+Additionally, install [Git LFS](https://git-lfs.github.com/).
+
+### Installing the neuromeka isaaclab extension
+Clone the repository and install it as a package in the dedicated conda environment.
+```
+conda activate env_isaaclab
+cd nrmk_isaaclab_public
 pip install -e .
 ```
 
-## Usage Examples
-
-We recommend using a **Conda environment** from IsaacLab.
-
-### **Training a Model**
-Activate the Conda environment and start training:
-```bash
-conda activate env_isaaclab
-python scripts/rsl_rl/train.py --task Indy-Reach --num_envs 4000 --headless --logger tensorboard
+## Usage Examples ([Demo video](https://youtu.be/EHRZnBG3YPo))
+Run simulator
 ```
-
-### **Playing a Trained Model**
-```bash
-conda activate env_isaaclab
-python scripts/rsl_rl/play.py --task Indy-Reach --num_envs 1 
+python deploy/sim.py --config deploy/configs/nami_nav.yaml
 ```
+Run keyboard controller for NAMI
+```
+python deploy/run_nav_keyboard.py
+```
+Run keyboard controller for Moby
+```
+python deploy/run_nav_keyboard.py --config deploy/configs/moby.yaml
+```
+Run keyboard controller with sensor visualizer
+Set `keyboard.debug_vis: true` in the selected deploy config.
 
-You can explore additional tasks in the `neuromeka-isaac/isaac_neuromeka/tasks` directory. For example:
-- `neuromeka-isaac/isaac_neuromeka/tasks/manipulation/reach/dual_arm/__init__.py`
-- `neuromeka-isaac/isaac_neuromeka/tasks/manipulation/reach/indy/__init__.py`
+## Custom usecase
+- In `deploy/run_nav_keyboard.py`, replace keyboard command with neural network controller or some other algorithms.
+- In `isaac_neuromeka/tasks/demo/nami_env_cfg.py`, change navigation scene with other opensource mesh file or manually scanned results. Check `NamiSceneCfg` in the file. Currently, below three scenes are provided.
+    - `isaac_neuromeka/assets/scene/hm3d_1`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
+    - `isaac_neuromeka/assets/scene/hm3d_2`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
+    - `isaac_neuromeka/assets/scene/nrmk_2nd_floor`: Neuromeka 2nd floor (-> scanned with [BLK2GO](https://shop.leica-geosystems.com/leica-blk/blk2go/overview?c1=GAW_SE_NW&source=USA_RC_BRND&kw=blk2go_exm&utm_source=google&utm_medium=cpc&utm_term=blk2go_exm&utm_campaign=USA__-__Reality_Capture__-__Branded&cr5=773061516399&cr7=c&gad_source=1&gad_campaignid=20547366468&gbraid=0AAAAADnuiFisxx-3b-ZPtg_ZwbxQbzfSl&gclid=Cj0KCQjwv-LOBhCdARIsAM5hdKePRWJ0ettjodu7fIahSKQtW6kiOjItG4iWOboSDgRcVMvLCbLRnZgaAgQuEALw_wcB))
+
+Core files to look into are as follows:
+- `isaac_neuromeka/tasks/demo/__init__.py`: Gym environment definition
+- `isaac_neuromeka/tasks/demo/nami_env_cfg.py`: NAMI environment
+- `deploy/sim.py`: Running simulator
+- `deploy/configs/nami_nav.yaml`: NAMI simulator streaming config
+- `deploy/run_nav_keyboard.py`: Running keyboard controller
 
 ## Setting Up VSCode (Optional)
 

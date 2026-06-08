@@ -12,15 +12,14 @@ The following example shows how to wrap an environment for NRMK-RL:
     env = NrmkRlVecEnvWrapper(env)
 
 """
-import pdb
+import pdb  # noqa:F401
 
 import gymnasium as gym
 import torch
-from nrmk_rl.env import VecEnv
 from isaaclab.envs import ManagerBasedRLEnv
 
 
-class NrmkRlVecEnvWrapper(VecEnv):
+class NrmkRlVecEnvWrapper:
     """Wraps around Orbit environment for NRMK-RL library"""
 
     def __init__(self, env: ManagerBasedRLEnv):
@@ -45,13 +44,14 @@ class NrmkRlVecEnvWrapper(VecEnv):
         self.device = self.unwrapped.device
         self.max_episode_length = self.unwrapped.max_episode_length
         self.num_actions = self.unwrapped.action_manager.total_action_dim
-        self.num_obs = self.unwrapped.observation_manager.group_obs_dim["policy"][0]
-        # -- privileged observations
-        if "critic" in self.unwrapped.observation_manager.group_obs_dim:
-            self.num_privileged_obs = self.unwrapped.observation_manager.group_obs_dim["critic"][0]
-        else:
-            self.num_privileged_obs = 0
-        # reset at the start since the NRMK-RL runner does not call reset
+        self.obs_dict = {}
+        # self.num_obs = self.unwrapped.observation_manager.group_obs_dim["policy"][0]
+        # # -- privileged observations
+        # if "critic" in self.unwrapped.observation_manager.group_obs_dim:
+        #     self.num_privileged_obs = self.unwrapped.observation_manager.group_obs_dim["critic"][0]
+        # else:
+        #     self.num_privileged_obs = 0
+        # # reset at the start since the NRMK-RL runner does not call reset
         self.env.reset()
 
     def __str__(self):
@@ -103,25 +103,43 @@ class NrmkRlVecEnvWrapper(VecEnv):
     def num_cost_terms(self) -> int:
         """Returns the number of cost terms in the environment."""
         return self.env.cost_manager.num_cost_terms
-    
+
     """
     Properties
     """
 
     def get_observations(self) -> tuple[torch.Tensor, dict]:
         """Returns the current observations of the environment."""
-        obs_dict = self.unwrapped.observation_manager.compute()
-        return self.get_flat_observation(obs_dict), {"observations": obs_dict}
+        return self.get_flat_observation(self.obs_dict), {"observations": self.obs_dict}
 
     def get_flat_observation(self, obs_dict) -> torch.Tensor:
+
+        # cases
+        ## For training: actor_obs_list exists and each obs is a tensor
+        ## For testing or some cases: some obs are dict and some are tensor
+        ## At the end, we want to concat all the tensors
+
         if hasattr(self.cfg, "actor_obs_list"):
-            return torch.cat([obs_dict[key] for key in self.cfg.actor_obs_list], dim=-1)
-        if isinstance(obs_dict["policy"], dict):
-            return torch.cat(list(obs_dict["policy"].values()), dim=-1)
+
+            obs_list_to_concat = []
+            for key in self.cfg.actor_obs_list:
+                obs_tensor = None
+                # if obs_dict[key] is a dict, then concatenate the values
+                if isinstance(obs_dict[key], dict):
+                    # obs_tensor = torch.cat(list(obs_dict[key].values()), dim=-1)
+                    obs_tensor = torch.cat(
+                        [value.reshape(self.num_envs, -1) for value in obs_dict[key].values()], dim=-1
+                    )  # need to check if this works
+                else:
+                    obs_tensor = obs_dict[key].reshape(self.num_envs, -1)
+                obs_list_to_concat.append(obs_tensor)
+            return torch.cat(obs_list_to_concat, dim=-1)
         else:
-            return obs_dict["policy"]
-        
-        
+            if isinstance(obs_dict["policy"], dict):
+                return torch.cat(list(obs_dict["policy"].values()), dim=-1)
+            else:
+                return obs_dict["policy"]
+
     @property
     def episode_length_buf(self) -> torch.Tensor:
         """The episode length buffer."""
@@ -146,7 +164,7 @@ class NrmkRlVecEnvWrapper(VecEnv):
     def reset(self) -> tuple[torch.Tensor, dict]:  # noqa: D102
         # reset the environment
         obs_dict, extras = self.env.reset()
-        
+        self.obs_dict = obs_dict
         obs = self.get_flat_observation(obs_dict)
         extras["observations"] = obs_dict
         return obs, extras
@@ -157,7 +175,7 @@ class NrmkRlVecEnvWrapper(VecEnv):
         # compute dones for compatibility with NRMK-RL
         dones = (terminated | truncated).to(dtype=torch.long)
         # move extra observations to the extras dict
-        
+        self.obs_dict = obs_dict
         obs = self.get_flat_observation(obs_dict)
 
         extras["observations"] = obs_dict
@@ -171,3 +189,7 @@ class NrmkRlVecEnvWrapper(VecEnv):
 
     def close(self):  # noqa: D102
         return self.env.close()
+
+    # # Used for NRMK-RL collision avoidance pretraining
+    # def set_estimation(self, estimation: torch.Tensor):
+    #     self.env.set_estimation(estimation)

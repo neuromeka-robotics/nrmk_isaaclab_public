@@ -1,28 +1,32 @@
 from __future__ import annotations
 
-import pdb
-from dataclasses import MISSING
+import pdb  # noqa:F401
 
-import numpy as np
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
-from isaaclab.managers import ActionTermCfg as ActionTerm
-from isaaclab.managers import CurriculumTermCfg as CurrTerm
-from isaaclab.managers import EventTermCfg as EventTerm
-from isaaclab.managers import ObservationGroupCfg as ObsGroup
-from isaaclab.managers import ObservationTermCfg as ObsTerm
-from isaaclab.managers import ManagerTermBase
-from isaaclab.managers import RewardTermCfg as RewTerm
-from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors import (  # noqa: F401
+    ContactSensor,
+    ContactSensorCfg,
+    FrameTransformer,
+    FrameTransformerCfg,
+)
 from isaaclab.utils import configclass
-from isaac_neuromeka.utils.etc import EmptyCfg
-import isaac_neuromeka.mdp as mdp
-from isaaclab.sensors import ContactSensor, ContactSensorCfg, FrameTransformer, FrameTransformerCfg
+
+import isaac_neuromeka.mdp as mdp  # noqa: F401
+from isaac_neuromeka.env.rl_task_env_cfg import NrmkRLEnvCfg
 
 # Import common environment configuration
-from isaac_neuromeka.tasks.manipulation.common.env_cfg_common import *
+from isaac_neuromeka.tasks.manipulation.common.env_cfg_common import (  # noqa: F401
+    ActionsCfg,
+    CommandsCfg,
+    EventCfg,
+    ObservationsCfg,
+    RewardsCfg,
+    TeacherObsCfg,
+    TerminationsCfg,
+)
+from isaac_neuromeka.utils.etc import EmptyCfg
 
 ##
 # Scene definition
@@ -50,28 +54,33 @@ class ReachSceneCfg(InteractiveSceneCfg):
 
     # robots
     robot: ArticulationCfg = None
-    
+
     # target object
     obstacle = None
 
     # contact sensor
     contact_sensors = ContactSensorCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/link[2-6]",
-            update_period=0.0, debug_vis=False, track_pose=True, track_air_time=False,
-        )
-    
+        prim_path="{ENV_REGEX_NS}/Robot/link[2-6]",
+        update_period=0.0,
+        debug_vis=False,
+        track_pose=True,
+        track_air_time=False,
+    )
+
     # lights
     light = AssetBaseCfg(
         prim_path="/World/light",
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=2500.0),
     )
 
+
 ##
 # Environment configuration
 ##
 
+
 @configclass
-class ReachEnvCfg(NrmkRLEnvCfg): 
+class ReachEnvCfg(NrmkRLEnvCfg):
     """Configuration for the reach end-effector pose tracking environment."""
 
     # Scene settings
@@ -84,15 +93,14 @@ class ReachEnvCfg(NrmkRLEnvCfg):
     rewards: RewardsCfg | EmptyCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg | EmptyCfg = EventCfg()
-    curriculum = EmptyCfg() # Not used for now
+    curriculum = EmptyCfg()  # Not used for now
     # CMDP settings
-    costs: CostsCfg | EmptyCfg = EmptyCfg() # Not used for now
-    
-    # 
-    actor_obs_list: list = ["policy"] # ["proprioception", "point_cloud", "privileged"]
-    critic_obs_list: list | None = None # None: same as actor_obs_list
-    teacher_obs_list: list | None = None # None: same as actor_obs_list
+    costs = EmptyCfg()  # Not used for now
 
+    #
+    actor_obs_list: list = ["policy"]  # ["proprioception", "point_cloud", "privileged"]
+    critic_obs_list: list | None = None  # None: same as actor_obs_list
+    teacher_obs_list: list | None = None  # None: same as actor_obs_list
 
     def __post_init__(self):
         """Post initialization."""

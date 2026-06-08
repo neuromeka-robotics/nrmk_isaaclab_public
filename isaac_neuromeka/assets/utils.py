@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import os
-import pdb
+import pdb  # noqa:F401
 import random
 import re
 from dataclasses import MISSING
 
 import h5py
-import numpy as np
-import omni.isaac.core.utils.prims as prim_utils
 import isaaclab.sim as sim_utils
+import omni.isaac.core.utils.prims as prim_utils
 import omni.usd
 from isaaclab.sim.spawners.from_files.from_files import _spawn_from_usd_file
 from isaaclab.sim.spawners.from_files.from_files_cfg import FileCfg
@@ -543,16 +542,20 @@ class MultiAssetCfg(sim_utils.SpawnerCfg):
     assets_cfg: list[sim_utils.SpawnerCfg] = MISSING
     """List of asset configurations to spawn."""
 
+
+from collections.abc import Callable
+
 ################################
 from typing import Dict
-from collections.abc import Callable
+
 from isaaclab.sim import CuboidCfg, spawn_cuboid
 
+
 def spawn_random_cuboid(
-        prim_path: str,
-        cfg: RandomCuboidCfg,
-        translation: tuple[float, float, float] | None = None,
-        orientation: tuple[float, float, float, float] | None = None,
+    prim_path: str,
+    cfg: RandomCuboidCfg,
+    translation: tuple[float, float, float] | None = None,
+    orientation: tuple[float, float, float, float] | None = None,
 ) -> Usd.Prim:
     """
     Create random size cuboids
@@ -568,8 +571,8 @@ def spawn_random_cuboid(
     prim = spawn_cuboid(prim_path, cfg, translation, orientation)
     return prim
 
+
 @configclass
 class RandomCuboidCfg(CuboidCfg):
     func: Callable = spawn_random_cuboid
     size_range: Dict[str, tuple[float, float]] = MISSING
-

@@ -5,7 +5,7 @@ import os
 import toml
 
 # Conveniences to other module directories via relative paths
-ORBIT_ASSETS_EXT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+ORBIT_ASSETS_EXT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 """Path to the extension source directory."""
 
 ORBIT_ASSETS_METADATA = toml.load(os.path.join(ORBIT_ASSETS_EXT_DIR, "config", "extension.toml"))
@@ -19,5 +19,9 @@ __version__ = ORBIT_ASSETS_METADATA["package"]["version"]
 # Configuration for different assets.
 ##
 
-from .indy import *
 from .dual_arm import *
+from .indy import *
+from .moby import *
+from .moby200 import *
+from .nami import *
+from .zen import *

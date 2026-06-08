@@ -1,7 +1,7 @@
-# Copyright (c) 2022-2024, The Isaac Lab Project Developers.
+# Copyright (c) 2025 Neuromeka
 # All rights reserved.
 #
-# SPDX-License-Identifier: BSD-3-Clause
+# SPDX-License-Identifier: Apache-2.0
 
 """This script sets up the vs-code settings for the Isaac Lab project.
 
@@ -115,9 +115,10 @@ def overwrite_python_analysis_extra_paths(isaaclab_settings: str) -> str:
     # add the path names that are in the Isaac Lab extensions directory
     isaaclab_extensions = os.listdir(os.path.join(ISAACLAB_DIR, "source"))
 
-    # isaaclab_extensions = 
-    path_names.extend(['"/home/joonho/git/IsaacLab/source/' + ext + '"' for ext in isaaclab_extensions])
-    
+    source_dir = os.path.join(ISAACLAB_DIR, "source")
+    ext_path_names = ['"' + os.path.join(source_dir, ext) + '"' for ext in isaaclab_extensions]
+    path_names.extend(ext_path_names)
+
     # combine them into a single string
     path_names = ",\n\t\t".expandtabs(4).join(path_names)
     # deal with the path separator being different on Windows and Unix

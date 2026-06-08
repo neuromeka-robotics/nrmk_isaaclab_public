@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import math
-import numpy as np
-
 from isaaclab.utils import configclass
+
 # from isaaclab.assets import RigidObjectCfg
 # # import isaaclab.sim as sim_utils
 # from isaaclab.sensors import CameraCfg, ContactSensorCfg
@@ -13,11 +11,12 @@ import isaac_neuromeka.mdp as mdp
 # Pre-defined configs
 ##
 from isaac_neuromeka.assets import INDY7_CFG
-from isaac_neuromeka.tasks.manipulation.reach.reach_env_cfg import ReachEnvCfg, ObservationsCfg
-from isaac_neuromeka.tasks.manipulation.reach.reach_env_cfg import TeacherObsCfg
-from isaac_neuromeka.tasks.manipulation.reach.reach_env_cfg import CostsCfg
 from isaac_neuromeka.mdp.actions import CustomJointPositionAction
-from isaac_neuromeka.utils.etc import EmptyCfg
+from isaac_neuromeka.tasks.manipulation.reach.reach_env_cfg import (  # noqa: F401
+    ObservationsCfg,
+    ReachEnvCfg,
+    TeacherObsCfg,
+)
 
 ##
 # Environment configuration
@@ -40,7 +39,10 @@ class Indy7ReachEnvCfg(ReachEnvCfg):
         # override actions
         self.actions.arm_action = mdp.JointPositionActionCfg(
             class_type=CustomJointPositionAction,
-            asset_name="robot", joint_names=["joint[0-5]"], scale=0.2, use_default_offset=True
+            asset_name="robot",
+            joint_names=["joint[0-5]"],
+            scale=0.2,
+            use_default_offset=True,
         )
         # override command generator body
         # end-effector is along z-direction
@@ -50,26 +52,26 @@ class Indy7ReachEnvCfg(ReachEnvCfg):
 @configclass
 class Indy7ReachTeacherEnvCfg(Indy7ReachEnvCfg):
     observations = TeacherObsCfg()
-        
+
     actor_obs_list: list = ["proprioception", "privileged"]
-    critic_obs_list: list | None = None # None: same as actor_obs_list
-    teacher_obs_list: list | None = None # unused. No teacher for teacher
+    critic_obs_list: list | None = None  # None: same as actor_obs_list
+    teacher_obs_list: list | None = None  # unused. No teacher for teacher
+
 
 @configclass
 class Indy7ReachStudentEnvCfg(Indy7ReachTeacherEnvCfg):
     actor_obs_list: list = ["proprioception"]
     teacher_obs_list: list = ["proprioception", "privileged"]
 
+
 @configclass
 class Indy7ReachCMDPEnvCfg(Indy7ReachEnvCfg):
     observations = TeacherObsCfg()
-    costs = CostsCfg()
-        
+
     actor_obs_list: list = ["proprioception", "privileged"]
-    critic_obs_list: list | None = None 
-    teacher_obs_list: list | None = None 
+    critic_obs_list: list | None = None
+    teacher_obs_list: list | None = None
 
     def __post_init__(self):
         super().__post_init__()
         # self.rewards.joint_vel.weight *= 0.1
-

@@ -3,7 +3,7 @@
 logs/
 robot_logs/
 _orbit*
-IsaacLab/   
+IsaacLab/
 .idea/
 wandb/
 
@@ -21,3 +21,5 @@ docker/artifacts/
 *.tmp
 
 build/
+.codex
+.asset_hash
