@@ -141,10 +141,11 @@ class MobySceneCfg(InteractiveSceneCfg):
     lidar = RayCasterCfg(
         # prim_path="{ENV_REGEX_NS}/robot/front_nanoscan3_sensor_link",
         prim_path="{ENV_REGEX_NS}/robot/base_link",
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.1), rot=(1.0, 0.0, 0.0, 0.0)),
         update_period=0.0,
         mesh_prim_paths=["/World/ground"],
         ray_alignment="base",
-        pattern_cfg=PlanarLidarPatternCfg(num_rays=500, angle_range=(-180.0, 180.0)),
+        pattern_cfg=PlanarLidarPatternCfg(num_rays=1024, angle_range=(-180.0, 180.0)),
         max_distance=10.0,
         debug_vis=True,
     )
