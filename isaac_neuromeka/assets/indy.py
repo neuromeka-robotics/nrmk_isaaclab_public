@@ -3,7 +3,11 @@ import os
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaac_neuromeka.assets.articulation import FiniteArticulation, FiniteArticulationCfg
+
+from isaac_neuromeka.assets.articulation import (
+    FiniteArticulation,
+    FiniteArticulationCfg,
+)
 
 ##
 # Configuration

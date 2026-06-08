@@ -19,9 +19,7 @@ NAMI_CFG = FiniteArticulationCfg(
             max_depenetration_velocity=5.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=True, 
-            solver_position_iteration_count=8, 
-            solver_velocity_iteration_count=0
+            enabled_self_collisions=True, solver_position_iteration_count=8, solver_velocity_iteration_count=0
         ),
     ),
     init_state=FiniteArticulationCfg.InitialStateCfg(
@@ -45,7 +43,6 @@ NAMI_CFG = FiniteArticulationCfg(
             "Joint_L8_L": 0.0,
             "Joint_L2_U": 0.0,
             "Joint_L3_U": 0.0,
-            
             # Mobile base
             "left_wheel_joint": 0.0,
             "right_wheel_joint": 0.0,
@@ -130,7 +127,6 @@ NAMI_CFG = FiniteArticulationCfg(
             stiffness=250.0,
             damping=20.0,
         ),
-        
         # Mobile base
         "wheel_joints": ImplicitActuatorCfg(
             joint_names_expr=["left_wheel_joint", "right_wheel_joint"],

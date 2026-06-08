@@ -12,16 +12,16 @@ collision_props:
   torsional_patch_radius: null
   min_torsional_patch_radius: null
 collision_approximation: meshSimplification
-translation: !!python/tuple
+translation:
 - 0.0
 - 0.0
 - 0.0
-rotation: !!python/tuple
+rotation:
 - 1.0
 - 0.0
 - 0.0
 - 0.0
-scale: !!python/tuple
+scale:
 - 1.0
 - 1.0
 - 1.0

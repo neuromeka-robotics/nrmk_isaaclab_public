@@ -3,7 +3,7 @@
 logs/
 robot_logs/
 _orbit*
-IsaacLab/   
+IsaacLab/
 .idea/
 wandb/
 

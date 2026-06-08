@@ -64,7 +64,7 @@
       <mass value="4.96199989" />
       <inertia ixx="0.0532494776" ixy="-0.000583359804" ixz="-0.00259357975" iyy="0.0968158964" iyz="0.000551749722" izz="0.062278088" />
     </inertial>
-    
+
     <visual>
       <origin xyz="0.001859324 -0.009593379 0" rpy="0.00000398 0 -0.12059899" />
       <geometry>
@@ -131,7 +131,7 @@
       <mass value="1" />
       <inertia ixx="0.001" ixy="7.94093388e-23" ixz="0" iyy="0.001" iyz="-2.05566059e-29" izz="0.001" />
     </inertial>
-    
+
   </link>
   <link name="dummy_rigid_body_2">
     <inertial>
@@ -139,7 +139,7 @@
       <mass value="1" />
       <inertia ixx="0.0049306478" ixy="-1.9903673e-06" ixz="5.09299388e-05" iyy="1.76127303" iyz="-4.00127957e-08" izz="0.0045293522" />
     </inertial>
-    
+
   </link>
   <link name="left_arm_link_1">
     <inertial>
@@ -301,7 +301,7 @@
       <mass value="1" />
       <inertia ixx="0.00492496431" ixy="-1.62003948e-06" ixz="-6.95719228e-05" iyy="1.76127303" iyz="2.28863626e-06" izz="0.00453502569" />
     </inertial>
-    
+
   </link>
   <link name="right_arm_link_1">
     <inertial>

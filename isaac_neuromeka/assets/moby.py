@@ -1,9 +1,12 @@
-import math
 import os
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaac_neuromeka.assets.articulation import FiniteArticulation, FiniteArticulationCfg
+
+from isaac_neuromeka.assets.articulation import (
+    FiniteArticulation,
+    FiniteArticulationCfg,
+)
 
 ##
 # Configuration
@@ -13,7 +16,7 @@ MOBY_CFG = FiniteArticulationCfg(
     class_type=FiniteArticulation,
     spawn=sim_utils.UsdFileCfg(
         usd_path=f"{os.path.dirname(os.path.abspath(__file__))}/model/usd/moby/moby.usd",
-        activate_contact_sensors=True, # TODO
+        activate_contact_sensors=True,  # TODO
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,  # (Indy control framework already includes gravity compensation) 모비는?
             max_depenetration_velocity=5.0,
@@ -35,25 +38,22 @@ MOBY_CFG = FiniteArticulationCfg(
             "joint5": 0.0,
         },
     ),
-    
     ## TODO: all these limits should be double-checked
     actuators={
         "tract_joints": ImplicitActuatorCfg(
             joint_names_expr=[".*_tract_joint"],
             velocity_limit=5.0,
             effort_limit=100.0,
-            stiffness=0.0, # -> only velocity control
+            stiffness=0.0,  # -> only velocity control
             damping=25.0,
         ),
-        
         "rotation_joints": ImplicitActuatorCfg(
             joint_names_expr=[".*_rot_joint"],
             velocity_limit=2.0,
-            effort_limit=100.0,  #60.0
-            stiffness=100.0,  #100.0
-            damping=20.0, #20.0
+            effort_limit=100.0,  # 60.0
+            stiffness=100.0,  # 100.0
+            damping=20.0,  # 20.0
         ),
-        
         # Arm joints
         "arm0": ImplicitActuatorCfg(
             joint_names_expr=["joint[0-1]"],

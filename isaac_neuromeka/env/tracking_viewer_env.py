@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import numpy as np
-import torch
 from collections.abc import Sequence
 
+import numpy as np
+import torch
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.envs.ui import ViewportCameraController
 from isaaclab.utils import math as math_utils
@@ -64,7 +64,9 @@ class YawTrackingViewportCameraController(ViewportCameraController):
         if self.viewer_quat is not None and self.cfg.origin_type in {"asset_root", "asset_body"}:
             quat = self.viewer_quat
             cam_eye_offset = torch.as_tensor(self.default_cam_eye, device=quat.device, dtype=quat.dtype).view(1, 3)
-            cam_target_offset = torch.as_tensor(self.default_cam_lookat, device=quat.device, dtype=quat.dtype).view(1, 3)
+            cam_target_offset = torch.as_tensor(self.default_cam_lookat, device=quat.device, dtype=quat.dtype).view(
+                1, 3
+            )
             cam_eye = viewer_origin + math_utils.quat_apply_yaw(quat, cam_eye_offset)[0].detach().cpu().numpy()
             cam_target = viewer_origin + math_utils.quat_apply_yaw(quat, cam_target_offset)[0].detach().cpu().numpy()
         else:

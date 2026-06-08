@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Neuromeka 
+# Copyright (c) 2025 Neuromeka
 # All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -18,7 +18,6 @@ import pathlib
 import platform
 import re
 import sys
-
 
 PROJECT_DIR = pathlib.Path(__file__).parents[2]
 """Path to the the project directory."""
@@ -117,9 +116,9 @@ def overwrite_python_analysis_extra_paths(isaaclab_settings: str) -> str:
     isaaclab_extensions = os.listdir(os.path.join(ISAACLAB_DIR, "source"))
 
     source_dir = os.path.join(ISAACLAB_DIR, "source")
-    ext_path_names = ['"' + os.path.join(source_dir, ext)  + '"' for ext in isaaclab_extensions]
+    ext_path_names = ['"' + os.path.join(source_dir, ext) + '"' for ext in isaaclab_extensions]
     path_names.extend(ext_path_names)
-    
+
     # combine them into a single string
     path_names = ",\n\t\t".expandtabs(4).join(path_names)
     # deal with the path separator being different on Windows and Unix

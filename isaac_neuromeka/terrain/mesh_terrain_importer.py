@@ -7,37 +7,29 @@
 
 from __future__ import annotations
 
-import builtins
-
 # python
 import os
 from typing import TYPE_CHECKING
 
-
-
 # isaac-lab
 import isaaclab.sim as sim_utils
+import numpy as np
+import torch
 
-from isaaclab.sim.simulation_context import SimulationContext
-from isaaclab.terrains import TerrainImporter
-from isaaclab.terrains.terrain_importer_cfg import TerrainImporterCfg
+##
+import trimesh
 
 # WARP
 import warp as wp
-from isaaclab.utils.warp import convert_to_warp_mesh
-from isaaclab.utils.warp import raycast_mesh
-
-## 
-import trimesh
-from isaaclab.utils import configclass
-import torch
-import numpy as np
-import isaaclab.sim as sim_utils
 from isaaclab.markers import VisualizationMarkers, VisualizationMarkersCfg
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
-
 from isaaclab.sim.converters import MeshConverter, MeshConverterCfg
 from isaaclab.sim.schemas import schemas_cfg
+from isaaclab.terrains import TerrainImporter
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+from isaaclab.utils.warp import convert_to_warp_mesh, raycast_mesh
+
+if TYPE_CHECKING:
+    from isaac_neuromeka.terrain.mesh_terrain_cfg import MeshTerrainImporterCfg
 
 
 class MeshTerrainImporter(TerrainImporter):
@@ -62,7 +54,6 @@ class MeshTerrainImporter(TerrainImporter):
         self.flat_positions = None
         self.env_origins = None  # assigned later when `configure_env_origins` is called
 
-
         ## LOAD OBJ
         obj_dir_abs = os.path.abspath(cfg.obj_dir)
 
@@ -76,7 +67,7 @@ class MeshTerrainImporter(TerrainImporter):
         ## Load mesh as USD in isaacsim
         usd_path = os.path.join(obj_dir_abs, "terrain.usd")
         if not os.path.exists(usd_path):
-            collision_approximation = "none" 
+            collision_approximation = "none"
             collision_props = schemas_cfg.CollisionPropertiesCfg(collision_enabled=True)
 
             mesh_converter_cfg = MeshConverterCfg(
@@ -89,23 +80,20 @@ class MeshTerrainImporter(TerrainImporter):
                 usd_file_name=os.path.basename(usd_path),
                 make_instanceable=True,
                 collision_approximation=collision_approximation,
-            )            
+            )
             self.mesh_converter = MeshConverter(cfg=mesh_converter_cfg)
 
         self.import_usd("terrain", usd_path)
 
         ## Compute origins
         self.load_terrain_mesh_and_compute_origins(self.obj_path)
-        
+
         # assign randomly
         num_envs = self.cfg.num_envs
-        idx = torch.randint(
-            low=0, high=self.flat_positions.shape[0], size=(num_envs,), device=self.device
-        )
+        idx = torch.randint(low=0, high=self.flat_positions.shape[0], size=(num_envs,), device=self.device)
         self.env_origins = self.flat_positions[idx]
 
         self.set_debug_vis(self.cfg.debug_vis)
-
 
     @property
     def flat_patches(self) -> dict[str, torch.Tensor]:
@@ -134,7 +122,7 @@ class MeshTerrainImporter(TerrainImporter):
                 )
             }
         )
-        
+
         if debug_vis:
             if not hasattr(self, "origin_visualizer"):
                 self.origin_visualizer = VisualizationMarkers(
@@ -153,12 +141,10 @@ class MeshTerrainImporter(TerrainImporter):
                 self.origin_visualizer.set_visibility(False)
         # report success
         return True
-    
 
     def load_terrain_mesh_and_compute_origins(self, obj_path: str):
         self.mesh = trimesh.load(obj_path, force="mesh", skip_materials=True)
         self.flat_positions = self.sample_nodes_from_mesh()
-
 
     def sample_nodes_from_mesh(self):
         """
@@ -169,14 +155,13 @@ class MeshTerrainImporter(TerrainImporter):
         face_weight = self.mesh.area_faces
         samples, face_index = trimesh.sample.sample_surface(self.mesh, sample_count, face_weight)
 
-
         face_ids = torch.tensor(face_index, device=self.device, dtype=torch.int64)
         positions = torch.tensor(samples, device=self.device, dtype=torch.float32)
         normals = torch.tensor(self.mesh.face_normals[face_index, :], device=self.device)
 
         # check gravity alignment
         gravity = torch.tensor([0.0, 0.0, -1.0]).to(normals)
-        mask = torch.abs(torch.arccos(torch.matmul(normals, -gravity))) < self.cfg.gravity_alignment_threshold 
+        mask = torch.abs(torch.arccos(torch.matmul(normals, -gravity))) < self.cfg.gravity_alignment_threshold
 
         face_ids = face_ids[mask]
         positions = positions[mask, :]
@@ -184,7 +169,6 @@ class MeshTerrainImporter(TerrainImporter):
 
         ## Find flat patches
         mesh_to_wp = convert_to_warp_mesh(self.mesh.vertices, self.mesh.faces, device="cuda")
-
 
         positions, face_ids = self.filter_flat(
             mesh_to_wp,
@@ -194,8 +178,8 @@ class MeshTerrainImporter(TerrainImporter):
         )
         return positions
 
-
-    def filter_flat(self,
+    def filter_flat(
+        self,
         wp_mesh: wp.Mesh,
         sampled_points: torch.Tensor,
         face_ids: torch.Tensor,
@@ -209,7 +193,6 @@ class MeshTerrainImporter(TerrainImporter):
         # -- patch radii
         if isinstance(patch_radius, float):
             patch_radius = [patch_radius]
-
 
         # create a circle of points around (0, 0) to query validity of the patches
         # the ring of points is uniformly distributed around the circle
@@ -225,20 +208,13 @@ class MeshTerrainImporter(TerrainImporter):
         # dim: (num_radii * 10, 3)
         query_points = torch.cat([query_x, query_y, torch.zeros_like(query_x)], dim=-1)
 
-        num_points = sampled_points.shape[0]
-        # create buffers
-        # -- a buffer to store indices of points that are not valid
-        points_ids = torch.arange(num_points, device=device)
-        
-
         # dim: (num_points, num_radii * 10, 3)
         scan_points = sampled_points.unsqueeze(1) + query_points
-        scan_points[..., 2] += 1.0 # Raycast from 1.0 above the patch to find the height
+        scan_points[..., 2] += 1.0  # Raycast from 1.0 above the patch to find the height
 
         # ray-cast direction is downwards
         scan_dirs = torch.zeros_like(scan_points)
         scan_dirs[..., 2] = -1.0
-
 
         ray_hits = raycast_mesh(scan_points.view(-1, 3), scan_dirs.view(-1, 3), wp_mesh)[0]
 
@@ -254,9 +230,9 @@ class MeshTerrainImporter(TerrainImporter):
                 heights_from_sampled_points >= self.cfg.flat_height_range[0],
                 heights_from_sampled_points <= self.cfg.flat_height_range[1],
             ),
-            dim=1
+            dim=1,
         )  # dim: (num_points,)
-        
+
         points_valid = sampled_points[valid, :]  # dim: (num_valid_points, 3)
         face_ids = face_ids[valid]  # dim: (num_valid_points,)
 

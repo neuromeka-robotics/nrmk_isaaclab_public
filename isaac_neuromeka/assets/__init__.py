@@ -23,5 +23,5 @@ from .dual_arm import *
 from .indy import *
 from .moby import *
 from .moby200 import *
-from .zen import *
 from .nami import *
+from .zen import *
