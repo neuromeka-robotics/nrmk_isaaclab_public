@@ -1,9 +1,12 @@
-# Neuromeka-IsaacLab (NAMI navigation)
-This repository contains minimal examples for navigating NAMI in a simulated environment. Specifically, it demonstrates:
-- Creating a simulated environment using a scanned scene mesh file
-- Spawning the NAMI robot within the environment
-- Streaming RGB and depth data from the robot’s RGB-D sensor
-- Controlling the NAMI robot using a keyboard
+# Neuromeka-IsaacLab
+This repository is a Neuromeka IsaacLab extension for robot simulation, task configuration, and reinforcement-learning workflows. It provides:
+- Neuromeka robot assets and IsaacLab task registrations
+- Manipulation reach examples such as `Indy-Reach` and `Dual-Arm-Reach`
+- Demo/deploy-style environments for Indy, Moby, NAMI, and Zen
+- Shared environment, MDP, terrain, and utility modules for IsaacLab projects
+- RSL-RL training and play scripts compatible with IsaacLab v2.3.0
+
+NAMI navigation is one example in this repository, not the full scope of the project.
 
 ## Installation
 ### Prerequisite
@@ -12,12 +15,12 @@ Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2
 
 The repository was tested with Isaac Sim **5.1** and IsaacLab **v2.3.0**.
 
-For IsaacSim installation, we recommend binary installation rather than pip installation.
+Use the **prebuilt IsaacLab installation** with the **binary Isaac Sim installation**. This is the setup used for testing this repository. Do not use a source-built IsaacLab checkout unless you are intentionally developing against IsaacLab itself.
 
 #### 2. Extra
 After installing IsaacLab, a dedicated conda environment will be created (e.g., `env_isaaclab`).
 Install extra packages.
-```
+```bash
 conda activate env_isaaclab
 pip install eclipse-zenoh open3d matplotlib pynput
 ```
@@ -25,41 +28,68 @@ Additionally, install [Git LFS](https://git-lfs.github.com/).
 
 ### Installing the neuromeka isaaclab extension
 Clone the repository and install it as a package in the dedicated conda environment.
-```
+```bash
 conda activate env_isaaclab
 cd nrmk_isaaclab_public
+git lfs pull
 pip install -e .
 ```
 
-## Usage Examples ([Demo video](https://youtu.be/EHRZnBG3YPo))
-Run simulator
+## Usage Examples
+### RSL-RL
+Train an Indy reach policy.
+```bash
+python scripts/rsl_rl/train.py --task Indy-Reach --num_envs 128
 ```
-python deploy/sim.py --config deploy/configs/nami_nav.yaml
+
+Train a dual-arm reach policy.
+```bash
+python scripts/rsl_rl/train.py --task Dual-Arm-Reach --num_envs 128
 ```
-Run keyboard controller for NAMI
+
+Play a trained checkpoint.
+```bash
+python scripts/rsl_rl/play.py --task Indy-Reach --checkpoint /path/to/model.pt
 ```
-python deploy/run_nav_keyboard.py
+
+View training logs.
+```bash
+tensorboard --logdir logs/rsl_rl
 ```
-Run keyboard controller for Moby
-```
-python deploy/run_nav_keyboard.py --config deploy/configs/moby.yaml
-```
-Run keyboard controller with sensor visualizer
-Set `keyboard.debug_vis: true` in the selected deploy config.
+
+### Registered environments
+Example task IDs registered by this package:
+- `Indy-Reach`
+- `Dual-Arm-Reach`
+
+Simulation-only/demo task IDs for visualization, sensor streaming, and integration experiments:
+- `Indy-Deploy`
+- `Moby-Deploy`
+- `Nami-Nav-Deploy`
+- `Zen-Deploy`
+
+### NAMI navigation example ([Demo video](https://youtu.be/EHRZnBG3YPo))
+The NAMI navigation demo config is in `isaac_neuromeka/tasks/demo/nami_env_cfg.py`.
 
 ## Custom usecase
-- In `deploy/run_nav_keyboard.py`, replace keyboard command with neural network controller or some other algorithms.
-- In `isaac_neuromeka/tasks/demo/nami_env_cfg.py`, change navigation scene with other opensource mesh file or manually scanned results. Check `NamiSceneCfg` in the file. Currently, below three scenes are provided.
+- For Indy reach tasks, start from `isaac_neuromeka/tasks/manipulation/reach/indy/env_cfg.py`.
+- For dual-arm reach tasks, start from `isaac_neuromeka/tasks/manipulation/reach/dual_arm/env_cfg.py`.
+- For shared manipulation logic, update `isaac_neuromeka/tasks/manipulation/common/env_cfg_common.py` and `isaac_neuromeka/tasks/manipulation/reach/reach_env_cfg.py`.
+- For demo/deploy-style robot environments, check `isaac_neuromeka/tasks/demo`.
+- For NAMI navigation scenes, update `NamiSceneCfg` in `isaac_neuromeka/tasks/demo/nami_env_cfg.py`. Currently, below three scenes are provided.
     - `isaac_neuromeka/assets/scene/hm3d_1`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
     - `isaac_neuromeka/assets/scene/hm3d_2`: [HM3D dataset](https://github.com/matterport/habitat-matterport-3dresearch)
-    - `isaac_neuromeka/assets/scene/nrmk_2nd_floor`: Neuromeka 2nd floor (-> scanned with [BLK2GO](https://shop.leica-geosystems.com/leica-blk/blk2go/overview?c1=GAW_SE_NW&source=USA_RC_BRND&kw=blk2go_exm&utm_source=google&utm_medium=cpc&utm_term=blk2go_exm&utm_campaign=USA__-__Reality_Capture__-__Branded&cr5=773061516399&cr7=c&gad_source=1&gad_campaignid=20547366468&gbraid=0AAAAADnuiFisxx-3b-ZPtg_ZwbxQbzfSl&gclid=Cj0KCQjwv-LOBhCdARIsAM5hdKePRWJ0ettjodu7fIahSKQtW6kiOjItG4iWOboSDgRcVMvLCbLRnZgaAgQuEALw_wcB))
+    - `isaac_neuromeka/assets/scene/nrmk_2nd_floor`: Neuromeka 2nd floor (scanned with [BLK2GO](https://shop.leica-geosystems.com/leica-blk/blk2go/overview?c1=GAW_SE_NW&source=USA_RC_BRND&kw=blk2go_exm&utm_source=google&utm_medium=cpc&utm_term=blk2go_exm&utm_campaign=USA__-__Reality_Capture__-__Branded&cr5=773061516399&cr7=c&gad_source=1&gad_campaignid=20547366468&gbraid=0AAAAADnuiFisxx-3b-ZPtg_ZwbxQbzfSl&gclid=Cj0KCQjwv-LOBhCdARIsAM5hdKePRWJ0ettjodu7fIahSKQtW6kiOjItG4iWOboSDgRcVMvLCbLRnZgaAgQuEALw_wcB))
 
 Core files to look into are as follows:
-- `isaac_neuromeka/tasks/demo/__init__.py`: Gym environment definition
-- `isaac_neuromeka/tasks/demo/nami_env_cfg.py`: NAMI environment
-- `deploy/sim.py`: Running simulator
-- `deploy/configs/nami_nav.yaml`: NAMI simulator streaming config
-- `deploy/run_nav_keyboard.py`: Running keyboard controller
+- `isaac_neuromeka/tasks/demo/__init__.py`: Demo/deploy Gym environment definitions
+- `isaac_neuromeka/tasks/demo/nami_env_cfg.py`: NAMI navigation environment
+- `isaac_neuromeka/tasks/manipulation/reach/indy/__init__.py`: Indy reach Gym environment definition
+- `isaac_neuromeka/tasks/manipulation/reach/indy/env_cfg.py`: Indy reach environment
+- `isaac_neuromeka/tasks/manipulation/reach/dual_arm/__init__.py`: Dual-arm reach Gym environment definition
+- `isaac_neuromeka/tasks/manipulation/reach/dual_arm/env_cfg.py`: Dual-arm reach environment
+- `scripts/rsl_rl/train.py`: RSL-RL training script
+- `scripts/rsl_rl/play.py`: RSL-RL play/export script
 
 ## Setting Up VSCode (Optional)
 
