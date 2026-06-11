@@ -9,6 +9,7 @@ from isaaclab_rl.rsl_rl import (
 @configclass
 class ReachPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
+    obs_groups = {"policy": ["policy"], "critic": ["policy"]}
     max_iterations = 50000
     save_interval = 50
     experiment_name = "demo"
@@ -17,6 +18,8 @@ class ReachPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     empirical_normalization = False
     policy = RslRlPpoActorCriticCfg(
         init_noise_std=1.0,
+        actor_obs_normalization=False,
+        critic_obs_normalization=False,
         actor_hidden_dims=[64, 64],
         critic_hidden_dims=[64, 64],
         activation="elu",

@@ -65,8 +65,8 @@ class ObservationsCfg:
         """Observations for policy group."""
 
         # observation terms (order preserved)
-        joint_pos = ObsTerm(func=mdp.joint_pos, noise=Gnoise(std=0.05), history_length=3)
-        joint_vel = ObsTerm(func=mdp.finite_joint_vel, noise=Gnoise(std=0.5), history_length=3)
+        joint_pos = ObsTerm(func=mdp.joint_pos, noise=Gnoise(std=0.01), history_length=3)
+        joint_vel = ObsTerm(func=mdp.finite_joint_vel, noise=Gnoise(std=0.1), history_length=3)
         pose_command = ObsTerm(func=mdp.generated_commands, params={"command_name": "ee_pose"})
 
         action_history = ObsTerm(func=mdp.action_history)
@@ -129,18 +129,17 @@ class EventCfg:
     # )
     reset_all = EventTerm(func=mdp.reset_scene_to_default, mode="reset")
 
-    # TODO: fix them
-    randomize_joint_friction = EventTerm(
-        func=mdp.randomize_joint_parameters,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names="joint.*"),
-            "friction_distribution_params": (0.7, 1.3),
-            "armature_distribution_params": (0.75, 1.25),
-            "operation": "abs",
-            "distribution": "uniform",
-        },
-    )
+    # randomize_joint_friction = EventTerm(
+    #     func=mdp.randomize_joint_parameters,
+    #     mode="reset",
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", joint_names="joint.*"),
+    #         "friction_distribution_params": (0.7, 1.3),
+    #         "armature_distribution_params": (0.75, 1.25),
+    #         "operation": "abs",
+    #         "distribution": "uniform",
+    #     },
+    # )
 
     # randomize_joint_stiffness_and_damping = EventTerm(
     #     func=mdp.randomize_actuator_gains,
@@ -170,7 +169,7 @@ class RewardsCfg:
     # task terms
     end_effector_position_tracking = RewTerm(
         func=mdp.end_effector_position_tracking_bounded,
-        weight=0.1,
+        weight=0.2,
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
             "command_name": "ee_pose",
@@ -180,7 +179,7 @@ class RewardsCfg:
 
     end_effector_orientation_tracking = RewTerm(
         func=mdp.end_effector_orientation_tracking_distance_bounded,
-        weight=0.05,
+        weight=0.1,
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=MISSING),
             "command_name": "ee_pose",
@@ -191,18 +190,18 @@ class RewardsCfg:
     ## regularizers
     end_effector_speed = RewTerm(
         func=mdp.end_effector_speed,
-        weight=-0.0005,
+        weight=-0.001,
         params={"asset_cfg": SceneEntityCfg("robot", body_names=MISSING)},
     )
 
     # action penalty
-    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.0001)
+    action_rate = RewTerm(func=mdp.action_rate_l2, weight=-0.001)
 
     # action_second_rate = RewTerm(func=mdp.action_second_rate_l2, weight=-0.0001)  # -0.00005
 
     joint_vel = RewTerm(
         func=mdp.finite_joint_vel_l2,
-        weight=-0.0005,
+        weight=-0.001,
         params={"asset_cfg": SceneEntityCfg("robot")},
     )
 

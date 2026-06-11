@@ -8,9 +8,9 @@ This repository contains minimal examples for navigating NAMI in a simulated env
 ## Installation
 ### Prerequisite
 #### 1. IsaacSim, IsaacLab
-Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2.2.1/source/setup/installation/binaries_installation.html) for IsaacSim and IsaacLab installation.
+Follow the [IsaacLab Installation Guide](https://isaac-sim.github.io/IsaacLab/v2.3.0/source/setup/installation/binaries_installation.html) for IsaacSim and IsaacLab installation.
 
-The repository was tested with Isaac Sim **4.5.0** and IsaacLab **v2.2.1**.
+The repository was tested with Isaac Sim **5.1** and IsaacLab **v2.3.0**.
 
 For IsaacSim installation, we recommend binary installation rather than pip installation.
 
